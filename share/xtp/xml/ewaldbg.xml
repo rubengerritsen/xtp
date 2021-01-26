@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<options>
+  <ewaldbg help="Computes the polarization state of the background using the Ewald summation technique.">
+    <dummy help="dummy stuff" default="dummyData"/>
+  </ewaldbg>
+</options>
