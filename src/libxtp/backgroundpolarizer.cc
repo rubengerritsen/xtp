@@ -52,7 +52,7 @@ void BackgroundPolarizer::Polarize(std::vector<PolarSegment>& polarSegments) {
 
   computeStaticFields(polarSegments);
 
-  computeInducedFields(polarSegments);
+  //computeInducedFields(polarSegments);
 
 }
 }  // namespace xtp

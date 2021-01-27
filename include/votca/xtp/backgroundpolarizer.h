@@ -34,10 +34,16 @@ class BackgroundPolarizer {
 
   ~BackgroundPolarizer() = default;
 
+
   void Polarize(std::vector<PolarSegment>& polarSegments);
 
  private:
   Logger& _log;
+  
+  std::vector<std::vector<std::pair<Index, Eigen::Vector3d>>> _nblist;
+
+  void computeStaticFieldAt(Index segId, std::vector<PolarSegment>& polarSegments);
+  void computeStaticFields(std::vector<PolarSegment>& polarSegments);
 };
 }  // namespace xtp
 }  // namespace votca
