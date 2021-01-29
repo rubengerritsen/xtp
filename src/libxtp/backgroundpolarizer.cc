@@ -23,7 +23,8 @@
 namespace votca {
 namespace xtp {
 
-void BackgroundPolarizer::computeStaticFieldAt(Index segId, std::vector<PolarSegment>& polarSegments){
+void BackgroundPolarizer::computeStaticFieldAt(
+    Index segId, std::vector<PolarSegment>& polarSegments) {
 
   // compute realspace sum
 
@@ -36,24 +37,52 @@ void BackgroundPolarizer::computeStaticFieldAt(Index segId, std::vector<PolarSeg
   // shape contribution
 }
 
-void BackgroundPolarizer::computeStaticFields(std::vector<PolarSegment>& polarSegments){
-  // Create Neighbours
-  
+void BackgroundPolarizer::computeNeighbourList(
+    std::vector<PolarSegment>& polarSegments) {
+  std::array<Index, 3> maxCopies =
+      _unit_cell.getNrOfRealSpaceCopiesForCutOff(_options.realcutoff);
+  _nbList.setSize(polarSegments.size());
 
-
-  // Perform actual field computations
-  for (Index segment = 0; segment < polarSegments.size(); ++segment){
-    computeStaticFieldAt(segment, polarSegments);
+#pragma omp parallel for
+  for (Index segId = 0; segId < polarSegments.size(); ++segId) {
+    PolarSegment& currentSeg = polarSegments[segId];
+    for (PolarSegment seg : polarSegments) {
+      Eigen::Vector3d dr = _unit_cell.minImage(currentSeg, seg);
+      // triple for-loop is over all unitcell copies
+      for (Index n1 = -maxCopies[0]; n1 < maxCopies[0]; ++n1) {
+        for (Index n2 = -maxCopies[1]; n2 < maxCopies[1]; ++n2) {
+          for (Index n3 = -maxCopies[2]; n3 < maxCopies[2]; ++n3) {
+            if (n1 == 0 && n2 == 0 && n3 == 0 &&
+                currentSeg.getId() == seg.getId()) {
+              continue;
+            }
+            // LVector is the vector pointing to the n1,n2,n3th box
+            Eigen::Vector3d lvector = _unit_cell.getLVector(n1, n2, n3);
+            Eigen::Vector3d dr_l = dr + lvector;
+            double dist = dr_l.norm();
+            if (dist < _options.realcutoff) {
+              _nbList.addNeighbourTo(segId, Neighbour(seg.getId(), dr_l, dist));
+            }
+          }
+        }
+      }
+    }
+    _nbList.sortOnDistance(segId);
   }
 }
 
+void BackgroundPolarizer::computeStaticFields(
+    std::vector<PolarSegment>& polarSegments) {
+  std::cout << "Hey Hallo" << std::endl;
+}
 
 void BackgroundPolarizer::Polarize(std::vector<PolarSegment>& polarSegments) {
 
+  computeNeighbourList(polarSegments);
+
   computeStaticFields(polarSegments);
 
-  //computeInducedFields(polarSegments);
-
+  // computeInducedFields(polarSegments);
 }
 }  // namespace xtp
 }  // namespace votca

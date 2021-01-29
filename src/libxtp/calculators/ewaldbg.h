@@ -23,6 +23,7 @@
 
 // Local VOTCA includes
 #include "votca/xtp/qmcalculator.h"
+#include "votca/xtp/ewaldunitcell.h"
 #include "votca/xtp/logger.h"
 #include "votca/xtp/classicalsegment.h"
 

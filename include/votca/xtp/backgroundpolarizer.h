@@ -22,30 +22,46 @@
 #define VOTCA_XTP_BACKGROUNDPOLARIZER_H
 #include <vector>
 // Local VOTCA includes
-#include "votca/xtp/logger.h"
+#include "votca/xtp/bgneighbourlist.h"
 #include "votca/xtp/classicalsegment.h"
+#include "votca/xtp/ewaldunitcell.h"
+#include "votca/xtp/logger.h"
 
 namespace votca {
 namespace xtp {
 
+struct EwaldOptions {
+  double realcutoff = 113.42;
+  double ewaldsplitting = 0;
+};
+
 class BackgroundPolarizer {
  public:
-  BackgroundPolarizer(Logger& log) : _log(log){};
+  BackgroundPolarizer(Logger& log, EwaldUnitCell& unitcell,
+                      EwaldOptions options)
+      : _log(log), _unit_cell(unitcell), _options(options){
+        options.realcutoff;
+      };
 
   ~BackgroundPolarizer() = default;
-
 
   void Polarize(std::vector<PolarSegment>& polarSegments);
 
  private:
   Logger& _log;
-  
-  std::vector<std::vector<std::pair<Index, Eigen::Vector3d>>> _nblist;
 
-  void computeStaticFieldAt(Index segId, std::vector<PolarSegment>& polarSegments);
+  BgNeighbourList _nbList;
+  EwaldUnitCell _unit_cell;
+  EwaldOptions _options;
+
+  Index _rs_n1_max, _rs_n2_max, _rs_n3_max;
+
+  void computeStaticFieldAt(Index segId,
+                            std::vector<PolarSegment>& polarSegments);
   void computeStaticFields(std::vector<PolarSegment>& polarSegments);
+  void computeNeighbourList(std::vector<PolarSegment>& polarSegments);
 };
 }  // namespace xtp
 }  // namespace votca
 
-# endif
+#endif

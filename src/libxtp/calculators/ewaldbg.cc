@@ -19,6 +19,7 @@
 #include "votca/xtp/segmentmapper.h"
 #include "votca/xtp/backgroundpolarizer.h"
 #include "votca/xtp/topology.h"
+#include "votca/xtp/ewaldunitcell.h"
 
 // Local private VOTCA includes
 #include "ewaldbg.h"
@@ -48,7 +49,9 @@ bool EwaldBG::Evaluate(Topology& top) {
   }
 
   // Polarize the neutral background
-  BackgroundPolarizer BgPol(_log);
+  EwaldUnitCell unit_cell(top.getBox());
+  EwaldOptions options;
+  BackgroundPolarizer BgPol(_log, unit_cell, options);
   BgPol.Polarize(_polar_background);
 
 
