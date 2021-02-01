@@ -31,42 +31,45 @@ namespace xtp {
 
 class Neighbour {
  public:
-  Neighbour(Index id, Eigen::Vector3d dr, double dist)
-      : segId(id), dr(dr), dist(dist){};
+  Neighbour(Index id, Eigen::Vector3d dr,Eigen::Vector3d shift, double dist)
+      : segId(id), _dr(dr),_shift(shift), _dist(dist){};
 
   ~Neighbour() = default;
 
   Index getId() const { return segId; }
 
   bool operator<(const Neighbour& other){
-    if(this->dist < other.getDist()){
+    if(this->_dist < other.getDist()){
       return true;
     }
     return false;
   } 
 
   bool operator>(const Neighbour& other){
-    if(this->dist > other.getDist()){
+    if(this->_dist > other.getDist()){
       return true;
     }
     return false;
   } 
 
   bool operator==(const Neighbour& other){
-    if(this->segId == other.getId() && this->dr.isApprox(other.getDr(), 1e-5)){
+    if(this->segId == other.getId() && this->_dr.isApprox(other.getDr(), 1e-5)){
       return true;
     }
     return false;
   }
 
-  const Eigen::Vector3d& getDr() const { return dr; }
+  const Eigen::Vector3d& getDr() const { return _dr; }
 
-  const double getDist() const { return dist; }
+  const Eigen::Vector3d& getShift() const {return _shift;}
+
+  double getDist() const { return _dist; }
 
  private:
   Index segId;
-  Eigen::Vector3d dr;
-  double dist;
+  Eigen::Vector3d _dr;
+  Eigen::Vector3d _shift;
+  double _dist;
 };
 
 class BgNeighbourList {

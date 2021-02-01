@@ -51,6 +51,10 @@ PolarSite::PolarSite(Index id, std::string element, Eigen::Vector3d pos)
 
 PolarSite::PolarSite(const data& d) { ReadData(d); }
 
+Eigen::Vector3d PolarSite::getStaticDipole() const {
+  return _Q.segment<3>(1);
+}
+
 Eigen::Vector3d PolarSite::getDipole() const {
   Eigen::Vector3d dipole = _Q.segment<3>(1);
   dipole += Induced_Dipole();

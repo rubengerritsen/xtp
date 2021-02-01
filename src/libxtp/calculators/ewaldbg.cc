@@ -19,6 +19,7 @@
 #include "votca/xtp/segmentmapper.h"
 #include "votca/xtp/backgroundpolarizer.h"
 #include "votca/xtp/topology.h"
+#include "votca/xtp/ewaldsegment.h"
 #include "votca/xtp/ewaldunitcell.h"
 
 // Local private VOTCA includes
@@ -48,12 +49,22 @@ bool EwaldBG::Evaluate(Topology& top) {
     _polar_background.push_back(mol);
   }
 
+  // Convert data to a cartesian representation
+  std::vector<EwaldSegment> _ewald_background;
+  for(const PolarSegment& pseg : _polar_background)
+  {
+    EwaldSegment eseg(pseg);
+    _ewald_background.push_back(eseg);
+  }
+
   // Polarize the neutral background
   EwaldUnitCell unit_cell(top.getBox());
   EwaldOptions options;
   BackgroundPolarizer BgPol(_log, unit_cell, options);
-  BgPol.Polarize(_polar_background);
+  BgPol.Polarize(_ewald_background);
 
+  // Update the original data in spherical coordinates
+  // TODO
 
   // Write the result to an hdf5 file
   WriteToHdf5("background_polarization.hdf5");

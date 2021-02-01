@@ -23,7 +23,7 @@
 #include <vector>
 #include <array>
 // Local VOTCA includes
-#include "votca/xtp/classicalsegment.h"
+#include "votca/xtp/ewaldsegment.h"
 
 namespace votca {
 namespace xtp {
@@ -54,7 +54,7 @@ class EwaldUnitCell {
   }
 
   Eigen::Vector3d getKVector(Index nx, Index ny, Index nz) const {
-    Eigen::Vector3d n(nx, ny, nz);
+    Eigen::Vector3d n((double)nx, (double)ny, (double)nz);
     return getKVector(n);
   }
 
@@ -63,7 +63,7 @@ class EwaldUnitCell {
   }
 
   Eigen::Vector3d getLVector(Index nx, Index ny, Index nz) const {
-    Eigen::Vector3d n(nx, ny, nz);
+    Eigen::Vector3d n((double)nx, (double)ny, (double)nz);
     return getLVector(n);
   }
 
@@ -71,7 +71,7 @@ class EwaldUnitCell {
     return cell_matrix * n;
   }
 
-  Eigen::Vector3d minImage(Eigen::Vector3d v1, Eigen::Vector3d v2) const {
+  Eigen::Vector3d minImage(const Eigen::Vector3d v1, const Eigen::Vector3d v2) const {
     Eigen::Vector3d r_tp = v1 - v2;
     Eigen::Vector3d r_dp =
         r_tp - cell_matrix.col(2) * std::round(r_tp.z() / cell_matrix(2, 2));
@@ -80,8 +80,12 @@ class EwaldUnitCell {
     return r_sp - cell_matrix.col(0) * std::round(r_sp.x() / cell_matrix(0, 0));
   }
 
-  Eigen::Vector3d minImage(PolarSegment seg1, PolarSegment seg2) const {
+  Eigen::Vector3d minImage(const EwaldSegment seg1, const EwaldSegment seg2) const {
     return minImage(seg1.getPos(), seg2.getPos());
+  }
+
+  Eigen::Vector3d minImage(const EwaldSite site1, const EwaldSite site2) const {
+    return minImage(site1.getPos(), site2.getPos());
   }
 
 
@@ -111,17 +115,15 @@ class EwaldUnitCell {
     return 0.5 * std::min(std::min(Wa, Wb), Wc);
   }
 
-  const double getVolume() const { return cell_volume; }
+  double getVolume() const { return cell_volume; }
 
   std::array<Index, 3> getNrOfRealSpaceCopiesForCutOff(double cutoff) {
     std::array<Index, 3> res;
     for (Index i = 0; i < 3; ++i) {
-      res[i] = std::ceil(cutoff / cell_matrix.col(i).norm() - 0.5) + 1;
+      res[i] = static_cast<Index>(std::ceil(cutoff / cell_matrix.col(i).norm()) - 0.5) + 1;
     }
     return res;
   }
-
-
 
  private:
   double cell_volume;

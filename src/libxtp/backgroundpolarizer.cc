@@ -18,13 +18,14 @@
  */
 
 #include "votca/xtp/backgroundpolarizer.h"
+#include "votca/xtp/ewaldinteractor.h"
 #include <vector>
 
 namespace votca {
 namespace xtp {
 
 void BackgroundPolarizer::computeStaticFieldAt(
-    Index segId, std::vector<PolarSegment>& polarSegments) {
+    Index segId, std::vector<EwaldSegment>& ewaldSegments) {
 
   // compute realspace sum
 
@@ -38,15 +39,15 @@ void BackgroundPolarizer::computeStaticFieldAt(
 }
 
 void BackgroundPolarizer::computeNeighbourList(
-    std::vector<PolarSegment>& polarSegments) {
+    std::vector<EwaldSegment>& ewaldSegments) {
   std::array<Index, 3> maxCopies =
       _unit_cell.getNrOfRealSpaceCopiesForCutOff(_options.realcutoff);
-  _nbList.setSize(polarSegments.size());
+  _nbList.setSize(ewaldSegments.size());
 
 #pragma omp parallel for
-  for (Index segId = 0; segId < polarSegments.size(); ++segId) {
-    PolarSegment& currentSeg = polarSegments[segId];
-    for (PolarSegment seg : polarSegments) {
+  for (Index segId = 0; segId < ewaldSegments.size(); ++segId) {
+    EwaldSegment& currentSeg = ewaldSegments[segId];
+    for (EwaldSegment seg : ewaldSegments) {
       Eigen::Vector3d dr = _unit_cell.minImage(currentSeg, seg);
       // triple for-loop is over all unitcell copies
       for (Index n1 = -maxCopies[0]; n1 < maxCopies[0]; ++n1) {
@@ -61,7 +62,8 @@ void BackgroundPolarizer::computeNeighbourList(
             Eigen::Vector3d dr_l = dr + lvector;
             double dist = dr_l.norm();
             if (dist < _options.realcutoff) {
-              _nbList.addNeighbourTo(segId, Neighbour(seg.getId(), dr_l, dist));
+              _nbList.addNeighbourTo(
+                  segId, Neighbour(seg.getId(), dr_l, lvector, dist));
             }
           }
         }
@@ -71,18 +73,35 @@ void BackgroundPolarizer::computeNeighbourList(
   }
 }
 
-void BackgroundPolarizer::computeStaticFields(
-    std::vector<PolarSegment>& polarSegments) {
-  std::cout << "Hey Hallo" << std::endl;
+void BackgroundPolarizer::computeStaticFieldsRS(
+    std::vector<EwaldSegment>& ewaldSegments) {
+
+#pragma omp parallel for
+  for (Index segId = 0; segId < ewaldSegments.size(); ++segId) {
+    EwaldInteractor interactor(1.0, _unit_cell);
+    EwaldSegment& currentSeg = ewaldSegments[segId];
+    for (const Neighbour& neighbour : _nbList.getNeighboursOf(segId)) {
+      EwaldSegment& nbSeg = ewaldSegments[neighbour.getId()];
+      for (EwaldSite& site : currentSeg) {
+        for (EwaldSite& nbSite : nbSeg) {
+          interactor.RS_StaticField(site, nbSite, neighbour.getShift());
+        }
+      }
+    }
+  }
 }
 
-void BackgroundPolarizer::Polarize(std::vector<PolarSegment>& polarSegments) {
+void BackgroundPolarizer::Polarize(std::vector<EwaldSegment>& ewaldSegments) {
 
-  computeNeighbourList(polarSegments);
+  computeNeighbourList(ewaldSegments);
 
-  computeStaticFields(polarSegments);
+  computeStaticFieldsRS(ewaldSegments);
 
-  // computeInducedFields(polarSegments);
+  for (auto& site : ewaldSegments[1100]){
+    std::cout << site << std::endl;
+  }
+
+  // computeInducedFields(ewaldSegments);
 }
 }  // namespace xtp
 }  // namespace votca
