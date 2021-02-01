@@ -32,8 +32,8 @@ namespace votca {
 namespace xtp {
 
 struct EwaldOptions {
-  double realcutoff = 113.42;
-  double ewaldsplitting = 1.0/18.8;
+  double realcutoff = 134.1;
+  double ewaldsplitting = 1.0/20.0;
 };
 
 class BackgroundPolarizer {

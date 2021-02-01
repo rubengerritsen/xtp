@@ -48,20 +48,20 @@ void EwaldInteractor::RS_StaticField(EwaldSite& site, const EwaldSite& nbSite,
   Eigen::Vector3d field = Eigen::Vector3d::Zero();
   Index rank = nbSite.getRank();
   // charge
-  field += - nbSite.getCharge() * dr * rR3s;
-  if (rank > 0){ // dipole
+  field += -nbSite.getCharge() * dr * rR3s;
+  if (rank > 0) {  // dipole
     field += nbSite.getStaticDipole() * rR3s;
-    field += - rR5s * dr * dr.dot(nbSite.getStaticDipole());
-    if (rank > 1){ //quadrupole
+    field += -rR5s * dr * dr.dot(nbSite.getStaticDipole());
+    if (rank > 1) {  // quadrupole
+      // Using that the quadrupole is traceless we can skip that part
+      field +=  rR5s * 2 * nbSite.getQuadrupole() * dr;
       Eigen::Matrix3d dyadic = dr * dr.transpose();
-      field += - rR7s * dr * (dyadic.array() * nbSite.getQuadrupole().array()).sum();
-      // Using that the quadrupole is traceless, hence we skip a bit
-      field += rR5s * 2 * nbSite.getQuadrupole() * dr;
+      field +=  -rR7s * dr *
+               (dyadic.array() * nbSite.getQuadrupole().array()).sum();
     }
   }
 
   site.addToStaticField(field);
-
 }
 
 }  // namespace xtp

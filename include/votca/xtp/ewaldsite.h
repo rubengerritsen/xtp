@@ -35,7 +35,7 @@ class EwaldSite {
 
   friend std::ostream& operator<<(std::ostream& out, const EwaldSite& site) {
     out << site.getId() << std::fixed << std::setprecision(2)
-        << " pos: " << site.getPos().transpose() << " q: " << site.getCharge()
+        << " pos: " << 0.05291 * site.getPos().transpose() << " q: " << site.getCharge()
         << std::scientific << std::setprecision(8)
         << " E: " << 5.142e11 * site.getStaticField().transpose();
     return out;

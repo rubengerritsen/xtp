@@ -77,8 +77,8 @@ void BackgroundPolarizer::computeStaticFieldsRS(
     std::vector<EwaldSegment>& ewaldSegments) {
 
 #pragma omp parallel for
-  for (Index segId = 0; segId < ewaldSegments.size(); ++segId) {
-    EwaldInteractor interactor(1.0, _unit_cell);
+  for (Index segId = 1100; segId < 1101; ++segId) {
+    EwaldInteractor interactor(_options.ewaldsplitting, _unit_cell);
     EwaldSegment& currentSeg = ewaldSegments[segId];
     for (const Neighbour& neighbour : _nbList.getNeighboursOf(segId)) {
       EwaldSegment& nbSeg = ewaldSegments[neighbour.getId()];
@@ -97,7 +97,8 @@ void BackgroundPolarizer::Polarize(std::vector<EwaldSegment>& ewaldSegments) {
 
   computeStaticFieldsRS(ewaldSegments);
 
-  for (auto& site : ewaldSegments[1100]){
+  std::cout << " ID " << ewaldSegments[1100].getId() << std::endl;
+  for (auto& site : ewaldSegments[1100]) {
     std::cout << site << std::endl;
   }
 
