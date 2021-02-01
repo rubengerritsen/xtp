@@ -20,8 +20,8 @@
 #pragma once
 #ifndef VOTCA_XTP_EWALDUNITCELL_H
 #define VOTCA_XTP_EWALDUNITCELL_H
-#include <vector>
 #include <array>
+#include <vector>
 // Local VOTCA includes
 #include "votca/xtp/ewaldsegment.h"
 
@@ -71,7 +71,8 @@ class EwaldUnitCell {
     return cell_matrix * n;
   }
 
-  Eigen::Vector3d minImage(const Eigen::Vector3d v1, const Eigen::Vector3d v2) const {
+  Eigen::Vector3d minImage(const Eigen::Vector3d v1,
+                           const Eigen::Vector3d v2) const {
     Eigen::Vector3d r_tp = v1 - v2;
     Eigen::Vector3d r_dp =
         r_tp - cell_matrix.col(2) * std::round(r_tp.z() / cell_matrix(2, 2));
@@ -80,15 +81,14 @@ class EwaldUnitCell {
     return r_sp - cell_matrix.col(0) * std::round(r_sp.x() / cell_matrix(0, 0));
   }
 
-  Eigen::Vector3d minImage(const EwaldSegment seg1, const EwaldSegment seg2) const {
+  Eigen::Vector3d minImage(const EwaldSegment seg1,
+                           const EwaldSegment seg2) const {
     return minImage(seg1.getPos(), seg2.getPos());
   }
 
   Eigen::Vector3d minImage(const EwaldSite site1, const EwaldSite site2) const {
     return minImage(site1.getPos(), site2.getPos());
   }
-
-
 
   const Eigen::Matrix3d& getMatrix() const { return cell_matrix; }
 
@@ -120,7 +120,9 @@ class EwaldUnitCell {
   std::array<Index, 3> getNrOfRealSpaceCopiesForCutOff(double cutoff) {
     std::array<Index, 3> res;
     for (Index i = 0; i < 3; ++i) {
-      res[i] = static_cast<Index>(std::ceil(cutoff / cell_matrix.col(i).norm()) - 0.5) + 1;
+      res[i] = static_cast<Index>(
+                   std::ceil(cutoff / cell_matrix.col(i).norm() - 0.5)) +
+               1;
     }
     return res;
   }

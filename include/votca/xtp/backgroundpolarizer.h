@@ -33,7 +33,7 @@ namespace xtp {
 
 struct EwaldOptions {
   double realcutoff = 113.42;
-  double ewaldsplitting = 0;
+  double ewaldsplitting = 1.0/18.8;
 };
 
 class BackgroundPolarizer {
