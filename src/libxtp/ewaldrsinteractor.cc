@@ -55,9 +55,7 @@ void EwaldRSInteractor::staticField(EwaldSite& site, const EwaldSite& nbSite,
     if (rank > 1) {  // quadrupole
       // Using that the quadrupole is traceless we can skip that part
       field += rR5s * 2 * nbSite.getQuadrupole() * dr;
-      Eigen::Matrix3d dyadic = dr * dr.transpose();
-      field +=
-          -rR7s * dr * (dyadic.array() * nbSite.getQuadrupole().array()).sum();
+      field += -rR7s * dr * dr.dot(nbSite.getQuadrupole() * dr);
     }
   }
 
