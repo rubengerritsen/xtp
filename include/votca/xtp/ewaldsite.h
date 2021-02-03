@@ -47,6 +47,8 @@ class EwaldSite {
 
   const Eigen::Vector3d& getStaticDipole() const { return _dipole_static; }
 
+  const Eigen::Vector3d& getTotalDipole() const {return _dipole_static + _dipole_induced;}
+
   double getCharge() const { return _charge; }
 
   const Eigen::Matrix3d& getQuadrupole() const { return _quadrupole; }
@@ -63,7 +65,7 @@ class EwaldSite {
   Eigen::Vector3d _position;
   double _charge;
   Eigen::Vector3d _dipole_static;
-  Eigen::Vector3d _dipole_induced;
+  Eigen::Vector3d _dipole_induced = Eigen::Vector3d::Zero();
   Eigen::Matrix3d _quadrupole;
   Eigen::Vector3d _field_static = Eigen::Vector3d::Zero();
 };

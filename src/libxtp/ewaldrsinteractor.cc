@@ -17,13 +17,13 @@
  *
  */
 
-#include "votca/xtp/ewaldinteractor.h"
+#include "votca/xtp/ewaldrsinteractor.h"
 #include <vector>
 
 namespace votca {
 namespace xtp {
 
-void EwaldInteractor::updateVariables(Eigen::Vector3d distVec) {
+void EwaldRSInteractor::updateVariables(Eigen::Vector3d distVec) {
   dr = distVec;
   R1 = dr.norm();
   R2 = R1 * R1;
@@ -31,7 +31,7 @@ void EwaldInteractor::updateVariables(Eigen::Vector3d distVec) {
   rR2 = rR1 * rR1;
 }
 
-void EwaldInteractor::computeScreenedInteraction() {
+void EwaldRSInteractor::computeScreenedInteraction() {
   rSqrtPiExp = rSqrtPi * std::exp(-a2 * R2);
 
   rR1s = std::erfc(a1 * R1) * rR1;
@@ -40,8 +40,8 @@ void EwaldInteractor::computeScreenedInteraction() {
   rR7s = rR2 * (5.0 * rR5s + (8.0 * a5) * rSqrtPiExp);
 }
 
-void EwaldInteractor::RS_StaticField(EwaldSite& site, const EwaldSite& nbSite,
-                                     const Eigen::Vector3d shift) {
+void EwaldRSInteractor::staticField(EwaldSite& site, const EwaldSite& nbSite,
+                                    const Eigen::Vector3d shift) {
   updateVariables(_unit_cell.minImage(site, nbSite) + shift);
   computeScreenedInteraction();
 
@@ -54,10 +54,10 @@ void EwaldInteractor::RS_StaticField(EwaldSite& site, const EwaldSite& nbSite,
     field += -rR5s * dr * dr.dot(nbSite.getStaticDipole());
     if (rank > 1) {  // quadrupole
       // Using that the quadrupole is traceless we can skip that part
-      field +=  rR5s * 2 * nbSite.getQuadrupole() * dr;
+      field += rR5s * 2 * nbSite.getQuadrupole() * dr;
       Eigen::Matrix3d dyadic = dr * dr.transpose();
-      field +=  -rR7s * dr *
-               (dyadic.array() * nbSite.getQuadrupole().array()).sum();
+      field +=
+          -rR7s * dr * (dyadic.array() * nbSite.getQuadrupole().array()).sum();
     }
   }
 

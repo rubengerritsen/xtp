@@ -18,7 +18,8 @@
  */
 
 #include "votca/xtp/backgroundpolarizer.h"
-#include "votca/xtp/ewaldinteractor.h"
+#include "votca/xtp/ewaldkspace.h"
+#include "votca/xtp/ewaldrsinteractor.h"
 #include <vector>
 
 namespace votca {
@@ -78,17 +79,24 @@ void BackgroundPolarizer::computeStaticFieldsRS(
 
 #pragma omp parallel for
   for (Index segId = 1100; segId < 1101; ++segId) {
-    EwaldInteractor interactor(_options.ewaldsplitting, _unit_cell);
+    EwaldRSInteractor rs_interactor(_options.ewaldsplitting, _unit_cell);
     EwaldSegment& currentSeg = ewaldSegments[segId];
     for (const Neighbour& neighbour : _nbList.getNeighboursOf(segId)) {
       EwaldSegment& nbSeg = ewaldSegments[neighbour.getId()];
       for (EwaldSite& site : currentSeg) {
         for (EwaldSite& nbSite : nbSeg) {
-          interactor.RS_StaticField(site, nbSite, neighbour.getShift());
+          rs_interactor.staticField(site, nbSite, neighbour.getShift());
         }
       }
     }
   }
+}
+
+void BackgroundPolarizer::computeStaticFieldsKS(
+    std::vector<EwaldSegment>& ewaldSegments) {
+  EwaldKSpace ks_interactor(_options.ewaldsplitting, _unit_cell,
+                                  ewaldSegments);
+  ;
 }
 
 void BackgroundPolarizer::Polarize(std::vector<EwaldSegment>& ewaldSegments) {
@@ -96,6 +104,8 @@ void BackgroundPolarizer::Polarize(std::vector<EwaldSegment>& ewaldSegments) {
   computeNeighbourList(ewaldSegments);
 
   computeStaticFieldsRS(ewaldSegments);
+
+  computeStaticFieldsKS(ewaldSegments);
 
   std::cout << " ID " << ewaldSegments[1100].getId() << std::endl;
   for (auto& site : ewaldSegments[1100]) {

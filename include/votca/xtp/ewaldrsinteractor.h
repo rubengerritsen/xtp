@@ -18,8 +18,8 @@
  */
 
 #pragma once
-#ifndef VOTCA_XTP_EWALDINTERACTOR_H
-#define VOTCA_XTP_EWALDINTERACTOR_H
+#ifndef VOTCA_XTP_EWALDRSINTERACTOR_H
+#define VOTCA_XTP_EWALDRSINTERACTOR_H
 
 #include <boost/math/constants/constants.hpp>
 #include <vector>
@@ -32,22 +32,22 @@
 namespace votca {
 namespace xtp {
 
-class EwaldInteractor {
+class EwaldRSInteractor {
  public:
-  EwaldInteractor(double alpha, const EwaldUnitCell& unitcell) : alpha(alpha), _unit_cell(unitcell) {
+  EwaldRSInteractor(double alpha, const EwaldUnitCell& unitcell) : alpha(alpha), _unit_cell(unitcell) {
     a1 = alpha;
     a2 = alpha * alpha;
     a3 = alpha * a2;
     a4 = a2 * a2;
     a5 = a4 * alpha;
   };
-  ~EwaldInteractor() = default;
+  ~EwaldRSInteractor() = default;
 
   void updateVariables(Eigen::Vector3d distVec);
 
   void computeScreenedInteraction();
 
-  void RS_StaticField(EwaldSite& site, const EwaldSite& nbSite,
+  void staticField(EwaldSite& site, const EwaldSite& nbSite,
                       const Eigen::Vector3d shift = Eigen::Vector3d::Zero());
 
  private:

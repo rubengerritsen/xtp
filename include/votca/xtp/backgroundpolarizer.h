@@ -58,6 +58,7 @@ class BackgroundPolarizer {
   void computeStaticFieldAt(Index segId,
                             std::vector<EwaldSegment>& ewaldSegments);
   void computeStaticFieldsRS(std::vector<EwaldSegment>& ewaldSegments);
+  void computeStaticFieldsKS(std::vector<EwaldSegment>& ewaldSegments);
   void computeNeighbourList(std::vector<EwaldSegment>& ewaldSegments);
 };
 }  // namespace xtp
