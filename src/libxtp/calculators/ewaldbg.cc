@@ -17,13 +17,14 @@
 
 // Local VOTCA includes
 #include "votca/xtp/segmentmapper.h"
-#include "votca/xtp/backgroundpolarizer.h"
 #include "votca/xtp/topology.h"
-#include "votca/xtp/ewaldsegment.h"
-#include "votca/xtp/ewaldunitcell.h"
+
 
 // Local private VOTCA includes
 #include "ewaldbg.h"
+#include "ewald/ewd_segment.h"
+#include "ewald/unitcell.h"
+#include "ewald/backgroundpolarizer.h"
 
 namespace votca {
 namespace xtp {
@@ -50,15 +51,15 @@ bool EwaldBG::Evaluate(Topology& top) {
   }
 
   // Convert data to a cartesian representation
-  std::vector<EwaldSegment> _ewald_background;
+  std::vector<EwdSegment> _ewald_background;
   for(const PolarSegment& pseg : _polar_background)
   {
-    EwaldSegment eseg(pseg);
+    EwdSegment eseg(pseg);
     _ewald_background.push_back(eseg);
   }
 
   // Polarize the neutral background
-  EwaldUnitCell unit_cell(top.getBox());
+  UnitCell unit_cell(top.getBox());
   EwaldOptions options;
   BackgroundPolarizer BgPol(_log, unit_cell, options);
   BgPol.Polarize(_ewald_background);

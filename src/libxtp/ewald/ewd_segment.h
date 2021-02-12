@@ -24,48 +24,49 @@
 #include <vector>
 
 // Local VOTCA includes
-
 #include "votca/xtp/classicalsegment.h"
-#include "votca/xtp/ewaldsite.h"
+
+// Private VOTCA includes
+#include "ewd_site.h"
 
 namespace votca {
 namespace xtp {
 
-class EwaldSegment {
+class EwdSegment {
  public:
-  EwaldSegment(const PolarSegment& pol) {
+  EwdSegment(const PolarSegment& pol) {
     for (const PolarSite& psite : pol) {
-      EwaldSite esite(psite);
+      EwdSite esite(psite);
       _sites.push_back(esite);
     }
     _id = pol.getId();
     _position = pol.getPos();
   }
-  ~EwaldSegment() = default;
+  ~EwdSegment() = default;
 
   const Eigen::Vector3d& getPos() const { return _position; }
 
   Index getId() const {return _id;}
 
-  const EwaldSite& at(Index index) const { return _sites.at(index); }
-  EwaldSite& at(Index index) { return _sites.at(index); }
+  const EwdSite& at(Index index) const { return _sites.at(index); }
+  EwdSite& at(Index index) { return _sites.at(index); }
 
-  const EwaldSite& operator[](Index index) const { return _sites[index]; }
-  EwaldSite& operator[](Index index) { return _sites[index]; }
+  const EwdSite& operator[](Index index) const { return _sites[index]; }
+  EwdSite& operator[](Index index) { return _sites[index]; }
 
-  typename std::vector<EwaldSite>::iterator begin() { return _sites.begin(); }
-  typename std::vector<EwaldSite>::iterator end() { return _sites.end(); }
+  typename std::vector<EwdSite>::iterator begin() { return _sites.begin(); }
+  typename std::vector<EwdSite>::iterator end() { return _sites.end(); }
 
-  typename std::vector<EwaldSite>::const_iterator begin() const {
+  typename std::vector<EwdSite>::const_iterator begin() const {
     return _sites.begin();
   }
-  typename std::vector<EwaldSite>::const_iterator end() const {
+  typename std::vector<EwdSite>::const_iterator end() const {
     return _sites.end();
   }
 
  private:
   Index _id;
-  std::vector<EwaldSite> _sites;
+  std::vector<EwdSite> _sites;
   Eigen::Vector3d _position;
 };
 }  // namespace xtp

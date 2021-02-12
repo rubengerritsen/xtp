@@ -17,41 +17,30 @@
  *
  */
 
-#pragma once
-#ifndef VOTCA_XTP_EWALDBG_H
-#define VOTCA_XTP_EWALDBG_H
-
-// Local VOTCA includes
-#include "votca/xtp/qmcalculator.h"
-#include "votca/xtp/logger.h"
-#include "votca/xtp/classicalsegment.h"
+#include "backgroundpolarizer.h"
+#include "kspace.h"
+#include "rspace.h"
+#include <iostream>
+#include <vector>
 
 namespace votca {
 namespace xtp {
 
-class EwaldBG final : public QMCalculator {
- public:
-  EwaldBG() = default;
-  ~EwaldBG() = default;
+void BackgroundPolarizer::Polarize(std::vector<EwdSegment>& ewaldSegments) {
 
-  std::string Identify() { return "ewaldbg"; }
+  // Setup the real and reciprocal space
+  RSpace rspace(_options, _unit_cell, ewaldSegments);
+  KSpace kspace(_options, _unit_cell, ewaldSegments);
 
-  bool WriteToStateFile() const { return true; }
+  std::cout << "Starting RSpace part" << std::endl;
+  //rspace.computeStaticField();
+  std::cout << "Starting KSpace part" << std::endl;
+  kspace.computeStaticField();
 
-  void WriteToHdf5(std::string filename) const;
-
- protected:
-  void ParseOptions(const tools::Property &user_options);
-  bool Evaluate(Topology &top);
-
- private:
- std::string _dummy;
- std::string _mapfile;
- Logger _log;
- std::vector<PolarSegment> _polar_background;
-};
-
+  std::cout << " ID " << ewaldSegments[1100].getId() << std::endl;
+  for (auto& site : ewaldSegments[1100]) {
+    std::cout << site << std::endl;
+  }
+}
 }  // namespace xtp
 }  // namespace votca
-
-#endif  // VOTCA_XTP_EWALDBG_H

@@ -18,8 +18,8 @@
  */
 
 #pragma once
-#ifndef VOTCA_XTP_BGNEIGHBOURLIST_H
-#define VOTCA_XTP_BGNEIGHBOURLIST_H
+#ifndef VOTCA_XTP_EWDNBLIST_H
+#define VOTCA_XTP_EWDNBLIST_H
 
 #include <vector>
 #include <algorithm>
@@ -72,10 +72,10 @@ class Neighbour {
   double _dist;
 };
 
-class BgNeighbourList {
+class EwdNbList {
  public:
-  BgNeighbourList() = default;
-  ~BgNeighbourList() = default;
+  EwdNbList() = default;
+  ~EwdNbList() = default;
 
   void setSize(Index size) { _nbList.resize(size); }
 

@@ -18,18 +18,19 @@
  */
 
 #pragma once
-#ifndef VOTCA_XTP_EWALDUNITCELL_H
-#define VOTCA_XTP_EWALDUNITCELL_H
+#ifndef VOTCA_XTP_UNITCELL_H
+#define VOTCA_XTP_UNITCELL_H
+
 #include <array>
 #include <vector>
 // Local VOTCA includes
-#include "votca/xtp/ewaldsegment.h"
+#include "ewd_segment.h"
 
 namespace votca {
 namespace xtp {
-class EwaldUnitCell {
+class UnitCell {
  public:
-  EwaldUnitCell(Eigen::Matrix3d _box) : cell_matrix(_box) {
+  UnitCell(Eigen::Matrix3d _box) : cell_matrix(_box) {
     Eigen::Vector3d L1 = cell_matrix.col(0);
     Eigen::Vector3d L2 = cell_matrix.col(1);
     Eigen::Vector3d L3 = cell_matrix.col(2);
@@ -51,6 +52,16 @@ class EwaldUnitCell {
     }
     cell_matrix_inv = cell_matrix.inverse();
     cell_volume = L1.dot(L2.cross(L3));
+  }
+
+  ~UnitCell() = default;
+
+  double getVolume() const { return cell_volume; }
+
+  const Eigen::Matrix3d& getMatrix() const { return cell_matrix; }
+
+  Eigen::Matrix3d getInverseMatrix() const {
+    return 2 * boost::math::constants::pi<double>() * cell_matrix_inv;
   }
 
   Eigen::Vector3d getKVector(Index nx, Index ny, Index nz) const {
@@ -81,20 +92,20 @@ class EwaldUnitCell {
     return r_sp - cell_matrix.col(0) * std::round(r_sp.x() / cell_matrix(0, 0));
   }
 
-  Eigen::Vector3d minImage(const EwaldSegment seg1,
-                           const EwaldSegment seg2) const {
+  Eigen::Vector3d minImage(const EwdSegment seg1,
+                           const EwdSegment seg2) const {
     return minImage(seg1.getPos(), seg2.getPos());
   }
 
-  Eigen::Vector3d minImage(const EwaldSite site1, const EwaldSite site2) const {
+  Eigen::Vector3d minImage(const EwdSite site1, const EwdSite site2) const {
     return minImage(site1.getPos(), site2.getPos());
   }
 
-  const Eigen::Matrix3d& getMatrix() const { return cell_matrix; }
-
-  friend std::ostream& operator<<(std::ostream& out, const EwaldUnitCell cell) {
+  friend std::ostream& operator<<(std::ostream& out, const UnitCell cell) {
     out << "Cell Matrix:";
-    out << "\n" << cell.getMatrix() << std::endl;
+    out << "\n" << 0.05291 * cell.getMatrix() << std::endl;
+    out << "Cell Matrix KSpace:";
+    out << "\n" << (1.0 / 0.05291) * cell.getInverseMatrix() << std::endl;
     out << "Cell Volume: " << cell.getVolume() << std::endl;
     return out;
   }
@@ -114,8 +125,6 @@ class EwaldUnitCell {
 
     return 0.5 * std::min(std::min(Wa, Wb), Wc);
   }
-
-  double getVolume() const { return cell_volume; }
 
   std::array<Index, 3> getNrOfRealSpaceCopiesForCutOff(double cutoff) {
     std::array<Index, 3> res;
