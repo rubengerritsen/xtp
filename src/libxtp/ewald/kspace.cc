@@ -61,11 +61,10 @@ void KSpace::computeStaticField() {
     EwdSegment& seg = _ewaldSegments[i];
     for (EwdSite& site : seg) {
       for (const KVector& kvec : _kvector_list) {
-        double realPart =
-            (ii * std::exp(ii * kvec.getVector().dot(site.getPos())) *(kvec.getSk()) ).real();
+
         site.addToStaticField(
-            fourPiVolume * kvec.getAk() * kvec.getVector() *
-            (realPart));
+          (
+            fourPiVolume *  ii *kvec.getVector() *std::exp(ii*kvec.getVector().dot(site.getPos())) * kvec.getAk() * std::conj(kvec.getSk()) ).real());
       }
     }
   }

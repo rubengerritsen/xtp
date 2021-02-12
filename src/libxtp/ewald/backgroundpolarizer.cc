@@ -33,7 +33,7 @@ void BackgroundPolarizer::Polarize(std::vector<EwdSegment>& ewaldSegments) {
   KSpace kspace(_options, _unit_cell, ewaldSegments);
 
   std::cout << "Starting RSpace part" << std::endl;
-  //rspace.computeStaticField();
+  rspace.computeStaticField();
   std::cout << "Starting KSpace part" << std::endl;
   kspace.computeStaticField();
 
