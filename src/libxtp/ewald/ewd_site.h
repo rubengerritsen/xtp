@@ -36,7 +36,7 @@ class EwdSite {
   friend std::ostream& operator<<(std::ostream& out, const EwdSite& site) {
     out << site.getId() << std::fixed << std::setprecision(2)
         << " pos: " << 0.05291 * site.getPos().transpose() << " q: " << site.getCharge()
-        << std::scientific << std::setprecision(8)
+        << std::scientific << std::setprecision(8) << " D: " <<  0.05291 *site.getStaticDipole().transpose() 
         << " E: " << 5.142e11 * site.getStaticField().transpose();
     return out;
   }

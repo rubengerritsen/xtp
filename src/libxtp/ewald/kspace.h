@@ -36,6 +36,8 @@ namespace xtp {
 
 class KVector;
 
+enum class Shape { xyslab, cube, sphere };
+
 class KSpace {
  public:
   KSpace(const EwaldOptions& options, const UnitCell& unitcell,
@@ -43,6 +45,8 @@ class KSpace {
   ~KSpace() = default;
 
   void computeStaticField();
+
+  void computeShapeField(Shape shape);
 
   void testFunction();
 
@@ -55,7 +59,6 @@ class KSpace {
   std::vector<EwdSegment>& _ewaldSegments;
   std::vector<KVector> _kvector_list;
   double fourPiVolume;
-  Eigen::Vector3d  mu_tot = Eigen::Vector3d::Zero();
   double cutoff, cutoff2;
   const std::complex<double> ii =
       std::complex<double>(0.0, 1.0);  // imaginary i

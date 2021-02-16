@@ -45,17 +45,11 @@ KSpace::KSpace(const EwaldOptions& options, const UnitCell& unitcell,
             << "]\n"
             << std::endl;
   std::cout << std::endl;
-
-  for (const EwdSegment& seg : _ewaldSegments) {
-    for (const EwdSite& sit : seg) {
-      mu_tot += sit.getStaticDipole();
-    }
-  }
 }
 
 void KSpace::computeStaticField() {
   computeKVectors();
-  
+
 #pragma omp parallel for
   for (Index i = 0; i < Index(_ewaldSegments.size()); ++i) {
     EwdSegment& seg = _ewaldSegments[i];
@@ -63,15 +57,55 @@ void KSpace::computeStaticField() {
       for (const KVector& kvec : _kvector_list) {
 
         site.addToStaticField(
-          (
-            fourPiVolume *  ii *kvec.getVector() *std::exp(ii*kvec.getVector().dot(site.getPos())) * kvec.getAk() * std::conj(kvec.getSk()) ).real());
+            (fourPiVolume * ii * kvec.getVector() *
+             std::exp(ii * kvec.getVector().dot(site.getPos())) * kvec.getAk() *
+             std::conj(kvec.getSk()))
+                .real());
       }
     }
   }
 }
 
-void KSpace::testFunction(){;
+void KSpace::computeShapeField(Shape shape) {
+  Eigen::Vector3d mu_tot = Eigen::Vector3d::Zero();
+  Eigen::Vector3d shapeField = Eigen::Vector3d::Zero();
+
+  std::ofstream outFile("dipTestVotca.txt");
+  if (outFile.is_open()) {
+
+  for (const EwdSegment& seg : _ewaldSegments) {
+    for (const EwdSite& sit : seg) {
+      // mu_tot += sit.getCharge() * sit.getPos();
+      mu_tot += sit.getStaticDipole();
+      outFile << 0.05291 * sit.getStaticDipole().transpose() << std::endl;
+    }
+  }
+  }
+  std::cout << "DIPOLE " << 0.05291 * mu_tot.transpose() << std::endl;
+
+  switch (shape) {
+    case Shape::xyslab:
+      shapeField[2] = fourPiVolume * mu_tot[2];
+      break;
+    case Shape::cube:
+    case Shape::sphere:
+      shapeField = (fourPiVolume / 3.0) * mu_tot;
+      break;
+    default:
+      throw std::runtime_error("Shape not implemented.");
+  }
+
+  std::cout << "Field " << 5.142e11 * shapeField.transpose() << std::endl;
+
+  // Apply the field to the sites
+  for (EwdSegment& seg : _ewaldSegments) {
+    for (EwdSite& sit : seg) {
+      sit.addToStaticField(shapeField);
+    }
+  }
 }
+
+void KSpace::testFunction() { ; }
 
 /**************************************************
  * PRIVATE FUNCTIONS                              *
