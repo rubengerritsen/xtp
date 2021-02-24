@@ -73,13 +73,13 @@ void KSpace::computeShapeField(Shape shape) {
   std::ofstream outFile("dipTestVotca.txt");
   if (outFile.is_open()) {
 
-  for (const EwdSegment& seg : _ewaldSegments) {
-    for (const EwdSite& sit : seg) {
-      // mu_tot += sit.getCharge() * sit.getPos();
-      mu_tot += sit.getStaticDipole();
-      outFile << 0.05291 * sit.getStaticDipole().transpose() << std::endl;
+    for (const EwdSegment& seg : _ewaldSegments) {
+      for (const EwdSite& sit : seg) {
+        // mu_tot += sit.getCharge() * sit.getPos();
+        mu_tot += sit.getStaticDipole();
+        outFile << 0.05291 * sit.getStaticDipole().transpose() << std::endl;
+      }
     }
-  }
   }
   std::cout << "DIPOLE " << 0.05291 * mu_tot.transpose() << std::endl;
 
