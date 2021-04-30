@@ -23,10 +23,9 @@
 namespace votca {
 namespace xtp {
 
-
 void RSpace::computeStaticField() {
 #pragma omp parallel for
-  for (Index segId = 1100; segId < 1101; ++segId) {
+  for (Index segId = 0; segId < _ewaldSegments.size(); ++segId) {
     EwdSegment& currentSeg = _ewaldSegments[segId];
     for (const Neighbour& neighbour : _nbList.getNeighboursOf(segId)) {
       EwdSegment& nbSeg = _ewaldSegments[neighbour.getId()];
@@ -35,6 +34,66 @@ void RSpace::computeStaticField() {
           site.addToStaticField(
               staticFieldAtBy(site, nbSite, neighbour.getShift()));
         }
+      }
+    }
+  }
+}
+
+Eigen::MatrixXd RSpace::getInducedDipoleInteraction() {
+  Eigen::MatrixXd result = Eigen::MatrixXd::Zero();
+#pragma omp parallel for
+  // The first part can be done in the same way as the static field ...
+  for (Index segId = 0; segId < _ewaldSegments.size(); ++segId) {
+    EwdSegment& currentSeg = _ewaldSegments[segId];
+    for (const Neighbour& neighbour : _nbList.getNeighboursOf(segId)) {
+      EwdSegment& nbSeg = _ewaldSegments[neighbour.getId()];
+      for (EwdSite& site : currentSeg) {
+        for (EwdSite& nbSite : nbSeg) {
+          site.addToStaticField(
+              inducedDipoleInteractionAtBy(site, nbSite, neighbour.getShift()));
+        }
+      }
+    }
+    // ... but we also need the dipole interaction within a segment
+    for (Index site_ind1 = 0; site_ind1 < currentSeg.size(); ++site_ind1) {
+      for (Index site_ind2 = site_ind1 + 1; site_ind2 < currentSeg.size();
+           ++site_ind2) {
+        currentSeg[site_ind1].addToInducedField(
+            inducedFieldAtBy(currentSeg[site_ind1], currentSeg[site_ind2]));
+        currentSeg[site_ind2].addToInducedField(
+            inducedFieldAtBy(currentSeg[site_ind2], currentSeg[site_ind1]));
+      }
+    }
+  }
+}
+
+void RSpace::computeInducedField() {
+#pragma omp parallel for
+  for (Index segId = 0; segId < _ewaldSegments.size(); ++segId) {
+    EwdSegment& currentSeg = _ewaldSegments[segId];
+    for (const Neighbour& neighbour : _nbList.getNeighboursOf(segId)) {
+      EwdSegment& nbSeg = _ewaldSegments[neighbour.getId()];
+      for (EwdSite& site : currentSeg) {
+        for (EwdSite& nbSite : nbSeg) {
+          site.addToInducedField(
+              inducedFieldAtBy(site, nbSite, neighbour.getShift()));
+        }
+      }
+    }
+  }
+}
+
+void RSpace::computeIntraMolecularField() {
+#pragma omp parallel for
+  for (Index segId = 0; segId < _ewaldSegments.size(); ++segId) {
+    EwdSegment& currentSeg = _ewaldSegments[segId];
+    for (Index site_ind1 = 0; site_ind1 < currentSeg.size(); ++site_ind1) {
+      for (Index site_ind2 = site_ind1 + 1; site_ind2 < currentSeg.size();
+           ++site_ind2) {
+        currentSeg[site_ind1].addToInducedField(
+            inducedFieldAtBy(currentSeg[site_ind1], currentSeg[site_ind2]));
+        currentSeg[site_ind2].addToInducedField(
+            inducedFieldAtBy(currentSeg[site_ind2], currentSeg[site_ind1]));
       }
     }
   }
@@ -53,12 +112,32 @@ void RSpace::computeDistanceVariables(Eigen::Vector3d distVec) {
 }
 
 void RSpace::computeScreenedInteraction() {
+  // Note RSpace screening is with erfc
   rSqrtPiExp = rSqrtPi * std::exp(-a2 * R2);
 
   rR1s = std::erfc(a1 * R1) * rR1;
   rR3s = rR2 * (rR1s + 2.0 * a1 * rSqrtPiExp);
-  rR5s = rR2 * (3.0 * rR3s + (4.0 * a3) * rSqrtPiExp);
-  rR7s = rR2 * (5.0 * rR5s + (8.0 * a5) * rSqrtPiExp);
+  rR5s = rR2 * (3.0 * rR3s + 4.0 * a3 * rSqrtPiExp);
+  rR7s = rR2 * (5.0 * rR5s + 8.0 * a5 * rSqrtPiExp);
+}
+
+void RSpace::computeTholeVariables(const Eigen::Matrix3d& pol1,
+                                   const Eigen::Matrix3d& pol2) {
+  thole_u3 =
+      (R1 * R2) / std::sqrt((1.0 / 3.0) * (pol1.array() * pol2.array()).sum());
+
+  if (thole_u3 < 40) {
+    double thole_exp = std::exp(-thole * thole_u3);
+    double thole_u6 = thole_u3 * thole_u3;
+    l3 = 1 - thole_exp;
+    l5 = 1 - (1 + thole * thole_u3) * thole_exp;
+    l7 = 1 - (1 + thole * thole_u3 + (3. / 5.) * thole2 * thole_u6);
+    l9 = 1 - (1 = thole * thole_u3 + (18. / 35.) * thole2 * thole_u6 +
+                  (9. / 35.) * thole3 * thole_u6 * thole_u3) *
+                 thole_exp;
+  } else {
+    l3 = l5 = l7 = l9 = 1.0;
+  }
 }
 
 void RSpace::setupNeighbourList() {
@@ -109,11 +188,36 @@ Eigen::Vector3d RSpace::staticFieldAtBy(EwdSite& site, const EwdSite& nbSite,
     field += nbSite.getStaticDipole() * rR3s;
     field += -rR5s * dr * dr.dot(nbSite.getStaticDipole());
     if (rank > 1) {  // quadrupole
-      // Using that the quadrupole is traceless we can skip that part
+      // Using that the trace of a quadrupole contributes nothing, we can skip
+      // that part
       field += rR5s * 2 * nbSite.getQuadrupole() * dr;
       field += -rR7s * dr * dr.dot(nbSite.getQuadrupole() * dr);
     }
   }
+  return field;
+}
+
+Eigen::Vector3d RSpace::inducedFieldAtBy(EwdSite& site, const EwdSite& nbSite,
+                                         const Eigen::Vector3d shift) {
+  computeDistanceVariables(_unit_cell.minImage(site, nbSite) + shift);
+  computeScreenedInteraction();
+  computeTholeVariables();
+
+  Eigen::Vector3d field = Eigen::Vector3d::Zero();
+  field += nbSite.getInducedDipole() * l3 * rR3s;
+  field += dr * nbSite.getInducedDipole().dot(dr) * l5 * rR5s;
+  return field;
+}
+
+Eigen::Vector3d RSpace::inducedDipoleInteractionAtBy(
+    EwdSite& site, const EwdSite& nbSite, const Eigen::Vector3d shift) {
+  computeDistanceVariables(_unit_cell.minImage(site, nbSite) + shift);
+  computeScreenedInteraction();
+  computeTholeVariables();
+
+  Eigen::Vector3d field = Eigen::Vector3d::Zero();
+  field += nbSite.getInducedDipole() * l3 * rR3s;
+  field += dr * nbSite.getInducedDipole().dot(dr) * l5 * rR5s;
   return field;
 }
 

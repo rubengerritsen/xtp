@@ -20,11 +20,10 @@
 #include "votca/xtp/segmentmapper.h"
 #include "votca/xtp/topology.h"
 
-
 // Local private VOTCA includes
+#include "backgroundpolarizer.h"
 #include "ewd_site.h"
 #include "unitcell.h"
-#include "backgroundpolarizer.h"
 
 namespace votca {
 namespace xtp {
@@ -36,11 +35,14 @@ EwdSite::EwdSite(const PolarSite& pol) {
   _charge = pol.getCharge();
   _dipole_static = pol.getStaticDipole();
   _dipole_induced = Eigen::Vector3d::Zero();
+  _polarization = pol.getpolarization();
   // the 1/3 saves factors in further calculations
   // The quadrupole in the Ewald site should by multiplied by 3 to obtain the
   // true quadrupole
   _quadrupole = (1.0 / 3.0) * pol.CalculateCartesianMultipole();
 }
+
+void EwdSite::induceDirect() { _dipole_induced = -_polarization * _field_static; }
 
 }  // namespace xtp
 }  // namespace votca

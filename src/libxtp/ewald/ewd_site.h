@@ -35,10 +35,25 @@ class EwdSite {
 
   friend std::ostream& operator<<(std::ostream& out, const EwdSite& site) {
     out << site.getId() << std::fixed << std::setprecision(2)
-        << " pos: " << 0.05291 * site.getPos().transpose() << " q: " << site.getCharge()
-        << std::scientific << std::setprecision(8) << " D: " <<  0.05291 *site.getStaticDipole().transpose() 
+        << " pos: " << 0.05291 * site.getPos().transpose()
+        << " q: " << site.getCharge() << std::scientific << std::setprecision(8)
+        << " D: " << 0.05291 * site.getStaticDipole().transpose()
         << " E: " << 5.142e11 * site.getStaticField().transpose();
     return out;
+  }
+
+  bool operator==(const EwdSite& other) {
+    if (this->getId() == other.getId()) {
+      return true;
+    }
+    return false;
+  }
+
+  bool operator!=(const EwdSite& other) {
+    if (this->getId() == other.getId()) {
+      return false;
+    }
+    return true;
   }
 
   Index getId() const { return _id; }
@@ -47,7 +62,11 @@ class EwdSite {
 
   const Eigen::Vector3d& getStaticDipole() const { return _dipole_static; }
 
-  const Eigen::Vector3d getTotalDipole() const {return _dipole_static + _dipole_induced;}
+  const Eigen::Vector3d getTotalDipole() const {
+    return _dipole_static + _dipole_induced;
+  }
+
+  const Eigen::Vector3d getInducedDipole() const { return _dipole_induced; }
 
   double getCharge() const { return _charge; }
 
@@ -59,6 +78,12 @@ class EwdSite {
 
   void addToStaticField(Eigen::Vector3d field) { _field_static += field; }
 
+  void addToInducedField(Eigen::Vector3d field) { _field_induced += field; }
+
+  void induceDirect();
+
+  void resetInductionField() { _field_induced = Eigen::Vector3d::Zero(); }
+
  private:
   Index _id;
   Index _rank;
@@ -68,6 +93,8 @@ class EwdSite {
   Eigen::Vector3d _dipole_induced = Eigen::Vector3d::Zero();
   Eigen::Matrix3d _quadrupole;
   Eigen::Vector3d _field_static = Eigen::Vector3d::Zero();
+  Eigen::Vector3d _field_induced = Eigen::Vector3d::Zero();
+  Eigen::Matrix3d _polarization;
 };
 }  // namespace xtp
 }  // namespace votca

@@ -44,16 +44,35 @@ class RSpace {
     a3 = a1 * a2;
     a4 = a2 * a2;
     a5 = a4 * a1;
+    thole = options.sharpness;
+    thole2 = thole * thole;
+    thole3 = thole * thole2;
+
     setupNeighbourList();
+
+    systemSize = 0;
+    for (const auto& seg : ewaldSegments) {
+      segmentOffSet.push_back(systemSize);
+      systemSize += 3 * seg.size();
+    }
   };
+
   ~RSpace() = default;
 
   void computeStaticField();
+
+  void computeInducedField();
+
+  void computeIntraMolecularField();
+
+  Eigen::MatrixXd getInducedDipoleInteraction();
 
  private:
   void computeDistanceVariables(Eigen::Vector3d distVec);
 
   void computeScreenedInteraction();
+
+  void computeTholeVariables();
 
   void setupNeighbourList();
 
@@ -61,11 +80,19 @@ class RSpace {
       EwdSite& site, const EwdSite& nbSite,
       const Eigen::Vector3d shift = Eigen::Vector3d::Zero());
 
+  Eigen::Vector3d inducedFieldAtBy(
+      EwdSite& site, const EwdSite& nbSite,
+      const Eigen::Vector3d shift = Eigen::Vector3d::Zero());
+
   /****************************/
   /* VARIABLES                */
   /****************************/
+  std::vector<Index> segmentOffSet;
+  Index systemSize;
   double cutoff;
   double a1, a2, a3, a4, a5;  // alpha (splitting param) and its powers
+  double l3, l5, l7, l9;
+  double thole, thole2, thole3, thole_u3;
   UnitCell _unit_cell;
   Eigen::Vector3d dr = Eigen::Vector3d::Zero();
   std::vector<EwdSegment>& _ewaldSegments;
@@ -73,8 +100,8 @@ class RSpace {
   double rR1, rR2;  // reciprocal (i.e. 1.0/ ...) distance and powers
   double R1, R2;    // distance and powers
   double rSqrtPiExp;
-  static constexpr double pi = boost::math::constants::pi<double>();
-  static constexpr double rSqrtPi = 1.0 / std::sqrt(pi);
+  double pi = boost::math::constants::pi<double>();
+  double rSqrtPi = 1.0 / std::sqrt(pi);
 
   // rRns = reciprocal R, of order n, screened with erfc
   double rR1s, rR3s, rR5s, rR7s;

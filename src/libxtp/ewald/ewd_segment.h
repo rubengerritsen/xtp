@@ -64,6 +64,8 @@ class EwdSegment {
     return _sites.end();
   }
 
+  Index size() const { return _sites.size();}
+
  private:
   Index _id;
   std::vector<EwdSite> _sites;

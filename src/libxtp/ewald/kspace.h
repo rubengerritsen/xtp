@@ -44,9 +44,18 @@ class KSpace {
          std::vector<EwdSegment>& ewaldSegments);
   ~KSpace() = default;
 
+  void computeInducedField();
+  void computeInducedShapeField();
+  void computeIntraMolecularInducedCorrection();
+
   void computeStaticField();
 
   void computeShapeField(Shape shape);
+
+  /**
+   * \brief Corrects for the molecular self-interaction in the reciprocal field.
+   */
+  void computeIntraMolecularCorrection();
 
   void testFunction();
 
@@ -54,24 +63,39 @@ class KSpace {
   std::complex<double> computeSk(const Eigen::Vector3d& kvector) const;
   double computeAk(const Eigen::Vector3d& kvector) const;
   void computeKVectors();
-  double a1, a2;  // alpha (splitting param) and its powers
+
+  void computeScreenedInteraction();
+  void computeDistanceVariables(Eigen::Vector3d distVec);
+
+  Eigen::Vector3d staticFieldAtBy(EwdSite& site, const EwdSite& nbSite);
+
+
+  double a1, a2, a3, a4, a5;  // alpha (splitting param) and its powers
   UnitCell _unit_cell;
   std::vector<EwdSegment>& _ewaldSegments;
   std::vector<KVector> _kvector_list;
   double fourPiVolume;
   double cutoff, cutoff2;
+  Eigen::Vector3d dr = Eigen::Vector3d::Zero();
   const std::complex<double> ii =
       std::complex<double>(0.0, 1.0);  // imaginary i
   std::array<Index, 3> max_K;
+  // rRns = reciprocal R, of order n, screened with erfc
+  double rR1s, rR3s, rR5s, rR7s;
+  double R1, R2;    // distance and powers
+  double rR1, rR2;  // reciprocal (i.e. 1.0/ ...) distance and powers
+  static constexpr double pi = boost::math::constants::pi<double>();
+  static constexpr double rSqrtPi = 1.0 / std::sqrt(pi);
 };
 
 /**
- * \brief Class that contains everything related to a single k-vector.
- * Its:
+ * \brief Class that contains everything related to a single k-vector:
  *  - k-vector
  *  - A(k) value
  *  - S(k) value (the structure factor)
- * Implements comparison operators for std::sort.
+ * Implements comparison operators for std::sort, such that vectors can be
+ * sorted based on importance, current ordering is the distance from central
+ * cell.
  */
 class KVector {
  public:

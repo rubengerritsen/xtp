@@ -36,12 +36,12 @@ struct EwaldOptions {
   double k_cutoff = 0.4;
   double r_cutoff = 134.1;
   double alpha = 6 / 18.897259;
+  double sharpness = 0.390;
 };
 
 class BackgroundPolarizer {
  public:
-  BackgroundPolarizer(Logger& log, UnitCell& unitcell,
-                      EwaldOptions options)
+  BackgroundPolarizer(Logger& log, UnitCell& unitcell, EwaldOptions options)
       : _log(log), _unit_cell(unitcell), _options(options){};
 
   ~BackgroundPolarizer() = default;
@@ -49,6 +49,7 @@ class BackgroundPolarizer {
   void Polarize(std::vector<EwdSegment>& ewaldSegments);
 
  private:
+  Index computeSystemSize(std::vector<EwdSegment>& ewaldSegments) const;
   Logger& _log;
   UnitCell _unit_cell;
   EwaldOptions _options;
