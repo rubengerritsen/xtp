@@ -72,9 +72,14 @@ class RSpace {
 
   void computeScreenedInteraction();
 
-  void computeTholeVariables();
+  void computeTholeVariables(const Eigen::Matrix3d& pol1,
+                             const Eigen::Matrix3d& pol2);
 
   void setupNeighbourList();
+
+  Eigen::Matrix3d inducedDipoleInteractionAtBy(
+      EwdSite& site, const EwdSite& nbSite,
+      const Eigen::Vector3d shift = Eigen::Vector3d::Zero());
 
   Eigen::Vector3d staticFieldAtBy(
       EwdSite& site, const EwdSite& nbSite,

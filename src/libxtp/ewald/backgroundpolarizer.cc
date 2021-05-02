@@ -65,7 +65,7 @@ void BackgroundPolarizer::Polarize(std::vector<EwdSegment>& ewaldSegments) {
   Eigen::VectorXd initialGuess = Eigen::VectorXd::Zero(systemSize);
   Index index = 0;
   for (auto& seg : ewaldSegments) {
-    for ( auto& site : seg) {
+    for (auto& site : seg) {
       site.induceDirect();  // compute induced dipole based on static field
       Eigen::Vector3d E = site.getStaticField();
       Eigen::Vector3d induced_dipole = site.getInducedDipole();
@@ -78,7 +78,7 @@ void BackgroundPolarizer::Polarize(std::vector<EwdSegment>& ewaldSegments) {
   // Set up the dipole interaction matrix
   Eigen::MatrixXd inducedDipoleInteraction =
       rspace.getInducedDipoleInteraction();
-  // inducedDipoleInteraction = kspace.getInducedDipoleInteraction();
+  inducedDipoleInteraction += kspace.getInducedDipoleInteraction();
 
   // Calculate induction field
   rspace.computeIntraMolecularField();
@@ -97,11 +97,6 @@ void BackgroundPolarizer::Polarize(std::vector<EwdSegment>& ewaldSegments) {
   // }
 
   // Convergence check
-}
-
-std::cout << " ID " << ewaldSegments[1100].getId() << std::endl;
-for (auto& site : ewaldSegments[1100]) {
-  std::cout << site << std::endl;
 }
 }  // namespace xtp
 }  // namespace votca

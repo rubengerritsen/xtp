@@ -66,6 +66,8 @@ class EwdSite {
     return _dipole_static + _dipole_induced;
   }
 
+  const Eigen::Matrix3d& getPolarizationMatrix() {return _polarization;}
+
   const Eigen::Vector3d getInducedDipole() const { return _dipole_induced; }
 
   double getCharge() const { return _charge; }

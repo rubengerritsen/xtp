@@ -42,29 +42,40 @@ void RSpace::computeStaticField() {
 Eigen::MatrixXd RSpace::getInducedDipoleInteraction() {
   Eigen::MatrixXd result = Eigen::MatrixXd::Zero();
 #pragma omp parallel for
-  // The first part can be done in the same way as the static field ...
   for (Index segId = 0; segId < _ewaldSegments.size(); ++segId) {
+    // The first part can be done in the same way as the static field ...
     EwdSegment& currentSeg = _ewaldSegments[segId];
     for (const Neighbour& neighbour : _nbList.getNeighboursOf(segId)) {
       EwdSegment& nbSeg = _ewaldSegments[neighbour.getId()];
+      Index startRow = segmentOffSet[segId];
       for (EwdSite& site : currentSeg) {
+        Index startCol = segmentOffSet[neighbour.getId()];
         for (EwdSite& nbSite : nbSeg) {
-          site.addToStaticField(
-              inducedDipoleInteractionAtBy(site, nbSite, neighbour.getShift()));
+          result.block<3, 3>(startRow, startCol) +=
+              inducedDipoleInteractionAtBy(site, nbSite, neighbour.getShift());
+          startCol += 3;
         }
+        startRow += 3;
       }
     }
     // ... but we also need the dipole interaction within a segment
+    Index startRow = segmentOffSet[segId];
+    Index startCol = startRow;
     for (Index site_ind1 = 0; site_ind1 < currentSeg.size(); ++site_ind1) {
       for (Index site_ind2 = site_ind1 + 1; site_ind2 < currentSeg.size();
            ++site_ind2) {
-        currentSeg[site_ind1].addToInducedField(
-            inducedFieldAtBy(currentSeg[site_ind1], currentSeg[site_ind2]));
-        currentSeg[site_ind2].addToInducedField(
-            inducedFieldAtBy(currentSeg[site_ind2], currentSeg[site_ind1]));
+        result.block<3, 3>(startRow + 3 * site_ind1,
+                           startCol + 3 * site_ind2) +=
+            inducedDipoleInteractionAtBy(currentSeg[site_ind1],
+                                         currentSeg[site_ind2]);
+        result.block<3, 3>(startRow + 3 * site_ind2,
+                           startCol + 3 * site_ind1) +=
+            inducedDipoleInteractionAtBy(currentSeg[site_ind2],
+                                         currentSeg[site_ind1]);
       }
     }
   }
+  return result;
 }
 
 void RSpace::computeInducedField() {
@@ -132,8 +143,8 @@ void RSpace::computeTholeVariables(const Eigen::Matrix3d& pol1,
     l3 = 1 - thole_exp;
     l5 = 1 - (1 + thole * thole_u3) * thole_exp;
     l7 = 1 - (1 + thole * thole_u3 + (3. / 5.) * thole2 * thole_u6);
-    l9 = 1 - (1 = thole * thole_u3 + (18. / 35.) * thole2 * thole_u6 +
-                  (9. / 35.) * thole3 * thole_u6 * thole_u3) *
+    l9 = 1 - (1 + thole * thole_u3 + (18. / 35.) * thole2 * thole_u6 +
+              (9. / 35.) * thole3 * thole_u6 * thole_u3) *
                  thole_exp;
   } else {
     l3 = l5 = l7 = l9 = 1.0;
@@ -201,7 +212,8 @@ Eigen::Vector3d RSpace::inducedFieldAtBy(EwdSite& site, const EwdSite& nbSite,
                                          const Eigen::Vector3d shift) {
   computeDistanceVariables(_unit_cell.minImage(site, nbSite) + shift);
   computeScreenedInteraction();
-  computeTholeVariables();
+  computeTholeVariables(site.getPolarizationMatrix(),
+                        nbSite.getPolarizationMatrix());
 
   Eigen::Vector3d field = Eigen::Vector3d::Zero();
   field += nbSite.getInducedDipole() * l3 * rR3s;
@@ -209,16 +221,17 @@ Eigen::Vector3d RSpace::inducedFieldAtBy(EwdSite& site, const EwdSite& nbSite,
   return field;
 }
 
-Eigen::Vector3d RSpace::inducedDipoleInteractionAtBy(
+
+Eigen::Matrix3d RSpace::inducedDipoleInteractionAtBy(
     EwdSite& site, const EwdSite& nbSite, const Eigen::Vector3d shift) {
   computeDistanceVariables(_unit_cell.minImage(site, nbSite) + shift);
   computeScreenedInteraction();
   computeTholeVariables();
 
-  Eigen::Vector3d field = Eigen::Vector3d::Zero();
-  field += nbSite.getInducedDipole() * l3 * rR3s;
-  field += dr * nbSite.getInducedDipole().dot(dr) * l5 * rR5s;
-  return field;
+  Eigen::Matrix3d interaction = Eigen::Matrix3d::Zero();
+  interaction.diagonal().array() += l3 * rR3s;
+  interaction += dr * dr.transpose() * l5 * rR5s;
+  return interaction;
 }
 
 }  // namespace xtp

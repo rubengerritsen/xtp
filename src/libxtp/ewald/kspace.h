@@ -59,6 +59,8 @@ class KSpace {
 
   void testFunction();
 
+  Eigen::MatrixXd getInducedDipoleInteraction();
+
  private:
   std::complex<double> computeSk(const Eigen::Vector3d& kvector) const;
   double computeAk(const Eigen::Vector3d& kvector) const;
