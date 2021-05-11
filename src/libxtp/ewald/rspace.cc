@@ -25,7 +25,7 @@ namespace xtp {
 
 void RSpace::computeStaticField() {
 #pragma omp parallel for
-  for (Index segId = 0; segId < _ewaldSegments.size(); ++segId) {
+  for (Index segId = 0; segId < Index(_ewaldSegments.size()); ++segId) {
     EwdSegment& currentSeg = _ewaldSegments[segId];
     for (const Neighbour& neighbour : _nbList.getNeighboursOf(segId)) {
       EwdSegment& nbSeg = _ewaldSegments[neighbour.getId()];
@@ -40,9 +40,10 @@ void RSpace::computeStaticField() {
 }
 
 Eigen::MatrixXd RSpace::getInducedDipoleInteraction() {
-  Eigen::MatrixXd result = Eigen::MatrixXd::Zero();
+  Eigen::MatrixXd result(systemSize,systemSize);
+  result.fill(0);
 #pragma omp parallel for
-  for (Index segId = 0; segId < _ewaldSegments.size(); ++segId) {
+  for (Index segId = 0; segId < Index(_ewaldSegments.size()); ++segId) {
     // The first part can be done in the same way as the static field ...
     EwdSegment& currentSeg = _ewaldSegments[segId];
     for (const Neighbour& neighbour : _nbList.getNeighboursOf(segId)) {
@@ -80,7 +81,7 @@ Eigen::MatrixXd RSpace::getInducedDipoleInteraction() {
 
 void RSpace::computeInducedField() {
 #pragma omp parallel for
-  for (Index segId = 0; segId < _ewaldSegments.size(); ++segId) {
+  for (Index segId = 0; segId < Index(_ewaldSegments.size()); ++segId) {
     EwdSegment& currentSeg = _ewaldSegments[segId];
     for (const Neighbour& neighbour : _nbList.getNeighboursOf(segId)) {
       EwdSegment& nbSeg = _ewaldSegments[neighbour.getId()];
@@ -96,7 +97,7 @@ void RSpace::computeInducedField() {
 
 void RSpace::computeIntraMolecularField() {
 #pragma omp parallel for
-  for (Index segId = 0; segId < _ewaldSegments.size(); ++segId) {
+  for (Index segId = 0; segId < Index(_ewaldSegments.size()); ++segId) {
     EwdSegment& currentSeg = _ewaldSegments[segId];
     for (Index site_ind1 = 0; site_ind1 < currentSeg.size(); ++site_ind1) {
       for (Index site_ind2 = site_ind1 + 1; site_ind2 < currentSeg.size();
@@ -226,7 +227,8 @@ Eigen::Matrix3d RSpace::inducedDipoleInteractionAtBy(
     EwdSite& site, const EwdSite& nbSite, const Eigen::Vector3d shift) {
   computeDistanceVariables(_unit_cell.minImage(site, nbSite) + shift);
   computeScreenedInteraction();
-  computeTholeVariables();
+  computeTholeVariables(site.getPolarizationMatrix(),
+                        nbSite.getPolarizationMatrix());
 
   Eigen::Matrix3d interaction = Eigen::Matrix3d::Zero();
   interaction.diagonal().array() += l3 * rR3s;

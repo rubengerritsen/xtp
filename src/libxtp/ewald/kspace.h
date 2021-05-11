@@ -44,35 +44,33 @@ class KSpace {
          std::vector<EwdSegment>& ewaldSegments);
   ~KSpace() = default;
 
-  void computeInducedField();
-  void computeInducedShapeField();
-  void computeIntraMolecularInducedCorrection();
-
   void computeStaticField();
-
   void computeShapeField(Shape shape);
-
-  /**
-   * \brief Corrects for the molecular self-interaction in the reciprocal field.
-   */
   void computeIntraMolecularCorrection();
-
-  void testFunction();
-
-  Eigen::MatrixXd getInducedDipoleInteraction();
+  Eigen::MatrixXd getInducedDipoleInteraction(Shape shape);
 
  private:
+  void computeTholeVariables(const Eigen::Matrix3d& pol1,
+                        const Eigen::Matrix3d& pol2);
   std::complex<double> computeSk(const Eigen::Vector3d& kvector) const;
   double computeAk(const Eigen::Vector3d& kvector) const;
   void computeKVectors();
+  Eigen::VectorXcd getSkInteractionVector(const Eigen::Vector3d& kvector);
 
   void computeScreenedInteraction();
   void computeDistanceVariables(Eigen::Vector3d distVec);
 
   Eigen::Vector3d staticFieldAtBy(EwdSite& site, const EwdSite& nbSite);
 
+  Eigen::Matrix3d inducedDipoleInteractionAtBy(EwdSite& site,
+                                               const EwdSite& nbSite);
+
+  std::vector<Index> segmentOffSet;
+  Index systemSize;
 
   double a1, a2, a3, a4, a5;  // alpha (splitting param) and its powers
+  double l3, l5, l7, l9;
+  double thole, thole2, thole3, thole_u3;
   UnitCell _unit_cell;
   std::vector<EwdSegment>& _ewaldSegments;
   std::vector<KVector> _kvector_list;
@@ -86,8 +84,8 @@ class KSpace {
   double rR1s, rR3s, rR5s, rR7s;
   double R1, R2;    // distance and powers
   double rR1, rR2;  // reciprocal (i.e. 1.0/ ...) distance and powers
-  static constexpr double pi = boost::math::constants::pi<double>();
-  static constexpr double rSqrtPi = 1.0 / std::sqrt(pi);
+  double pi = boost::math::constants::pi<double>();
+  double rSqrtPi = 1.0 / std::sqrt(pi);
 };
 
 /**

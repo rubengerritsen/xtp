@@ -20,6 +20,7 @@
 #include "backgroundpolarizer.h"
 #include "kspace.h"
 #include "rspace.h"
+#include <fstream>
 #include <iostream>
 #include <vector>
 
@@ -39,15 +40,40 @@ void BackgroundPolarizer::Polarize(std::vector<EwdSegment>& ewaldSegments) {
 
   Index systemSize = computeSystemSize(ewaldSegments);
 
+  std::ofstream infile;
+  infile.open("inputStateXTP.txt");
+  infile << "id x y z q dx dy dz Ex Ey Ez" << std::endl;
+  for (const auto& seg : ewaldSegments) {
+    for (const auto& site : seg) {
+      infile << site << std::endl;
+    }
+  }
+  infile << std::endl;
+
+  std::cout << "Setup real space and reciprocal space, precomputing K-vectors"
+            << std::endl;
+
   // Setup the real and reciprocal space
   RSpace rspace(_options, _unit_cell, ewaldSegments);
   KSpace kspace(_options, _unit_cell, ewaldSegments);
 
-  // Generate Permanent fields (F^a_alpha)
+  std::cout << "Generate permanent fields" << std::endl;
   rspace.computeStaticField();
-  kspace.computeStaticField();
-  kspace.computeShapeField(Shape::cube);
-  kspace.computeIntraMolecularCorrection();
+  std::cout << "Computed real space fields" << std::endl;
+  // kspace.computeStaticField();
+  // kspace.computeShapeField(Shape::cube);
+  // kspace.computeIntraMolecularCorrection();
+  std::cout << "Computed reciprocal space fields" << std::endl;
+
+  std::ofstream infile2;
+  infile2.open("staticFieldXTP.txt");
+  infile2 << "id x y z q dx dy dz Ex Ey Ez" << std::endl;
+  for (const auto& seg : ewaldSegments) {
+    for (const auto& site : seg) {
+      infile2 << site << std::endl;
+    }
+  }
+  infile << std::endl;
 
   /*******************************************************
    * We turn the problem into a linear problem (A + B)x = b
@@ -74,29 +100,59 @@ void BackgroundPolarizer::Polarize(std::vector<EwdSegment>& ewaldSegments) {
       index += 3;
     }
   }
+  std::cout << "Computed initial guess" << std::endl;
 
   // Set up the dipole interaction matrix
   Eigen::MatrixXd inducedDipoleInteraction =
       rspace.getInducedDipoleInteraction();
-  inducedDipoleInteraction += kspace.getInducedDipoleInteraction();
+  std::cout << "Setup real space part of dipole interaction matrix"
+            << std::endl;
+  inducedDipoleInteraction += kspace.getInducedDipoleInteraction(Shape::cube);
+  std::cout << "Setup reciprocal space part of dipole interaction matrix"
+            << std::endl;
 
-  // Calculate induction field
-  rspace.computeIntraMolecularField();
-  rspace.computeInducedField();
+  // Add  the inverse polarization
+  Index diagIndex = 0;
+  for (auto& seg : ewaldSegments) {
+    for (auto& site : seg) {
+      inducedDipoleInteraction.block<3, 3>(diagIndex, diagIndex) +=
+          site.getPolarizationMatrix().inverse();
+      diagIndex += 3;
+    }
+  }
+  std::cout << "Setup the inverse polarization matrix. \nStarting "
+               "preconditioned conjugate gradient solver"
+            << std::endl;
 
-  kspace.computeInducedField();
-  kspace.computeInducedShapeField();
-  kspace.computeIntraMolecularInducedCorrection();
+  // Solving the linear system
+  Eigen::ConjugateGradient<Eigen::MatrixXd, Eigen::Lower | Eigen::Upper,
+                           Eigen::DiagonalPreconditioner<double>>
+      cg;
+  cg.setMaxIterations(100);
+  cg.setTolerance(1e-3);
+  cg.compute(inducedDipoleInteraction);
+  Eigen::VectorXd x = cg.solveWithGuess(staticField, initialGuess);
 
-  // // Update induced dipoles with SOR
-  // double wSOR = 0.35;
-  // for (const EwdSegment& seg : ewaldSegements) {
-  //   for (const EwdSite& site : seg) {
-  //     site.updateInducedDipoles(wSOR);
-  //   }
-  // }
+  std::cout << TimeStamp() << " CG: #iterations: " << cg.iterations()
+            << ", estimated error: " << cg.error() << std::endl;
 
-  // Convergence check
+  if (cg.info() == Eigen::ComputationInfo::NoConvergence) {
+    std::cout << "PCG iterations did not converge" << std::endl;
+  }
+
+  if (cg.info() == Eigen::ComputationInfo::NumericalIssue) {
+    std::cout << "PCG had a numerical issue" << std::endl;
+  }
+
+  x = 0.05291 * x; // convert to CTP units
+
+  std::ofstream outfile;
+  outfile.open("inducedDipoleXTP.txt");
+  outfile << "idx idy idz" << std::endl;
+  for (Index i = 0; i < systemSize; i += 3) {
+    outfile << x[i + 0] << " " << x[i + 1] << " " << x[i + 2] << "\n";
+  }
+  outfile << std::endl;
 }
 }  // namespace xtp
 }  // namespace votca

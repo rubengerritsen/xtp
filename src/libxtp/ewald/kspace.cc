@@ -17,6 +17,7 @@
  *
  */
 
+#include <cmath>
 #include <vector>
 
 // Local includes
@@ -48,20 +49,26 @@ KSpace::KSpace(const EwaldOptions& options, const UnitCell& unitcell,
             << "]\n"
             << std::endl;
   std::cout << std::endl;
+
+  systemSize = 0;
+  for (const auto& seg : ewaldSegments) {
+    segmentOffSet.push_back(systemSize);
+    systemSize += 3 * seg.size();
+  }
+
+  // precompute the K-Vectors
+  computeKVectors();
 }
 
 void KSpace::computeStaticField() {
-  computeKVectors();
-
 #pragma omp parallel for
   for (Index i = 0; i < Index(_ewaldSegments.size()); ++i) {
     EwdSegment& seg = _ewaldSegments[i];
     for (EwdSite& site : seg) {
       for (const KVector& kvec : _kvector_list) {
-
         site.addToStaticField(
-            (fourPiVolume * ii * kvec.getVector() *
-             std::exp(ii * kvec.getVector().dot(site.getPos())) * kvec.getAk() *
+            fourPiVolume * kvec.getVector() * kvec.getAk() *
+            (ii * std::exp(ii * kvec.getVector().dot(site.getPos())) *
              std::conj(kvec.getSk()))
                 .real());
       }
@@ -69,24 +76,95 @@ void KSpace::computeStaticField() {
   }
 }
 
-
-void KSpace::computeStaticField() {
-  computeKVectors();
-
-#pragma omp parallel for
-  for (Index i = 0; i < Index(_ewaldSegments.size()); ++i) {
-    EwdSegment& seg = _ewaldSegments[i];
-    for (EwdSite& site : seg) {
-      for (const KVector& kvec : _kvector_list) {
-
-        site.addToStaticField(
-            (fourPiVolume * ii * kvec.getVector() *
-             std::exp(ii * kvec.getVector().dot(site.getPos())) * kvec.getAk() *
-             std::conj(kvec.getSk()))
-                .real());
+Eigen::MatrixXd KSpace::getInducedDipoleInteraction(Shape shape) {
+  Eigen::MatrixXd result(systemSize, systemSize);
+  result.fill(0);
+  // Basic induced field
+  for (const KVector& kvec : _kvector_list) {
+    Eigen::VectorXcd SkInteraction = getSkInteractionVector(kvec.getVector());
+    for (Index i = 0; i < Index(_ewaldSegments.size()); ++i) {
+      EwdSegment& seg = _ewaldSegments[i];
+      Index startRow = segmentOffSet[i];
+      for (EwdSite& site : seg) {
+        double kPosDot = kvec.getVector().dot(site.getPos());
+        Eigen::VectorXd realPart = std::sin(kPosDot) * SkInteraction.real() +
+                                   std::cos(kPosDot) * SkInteraction.imag();
+        result.row(startRow + 0) +=
+            fourPiVolume * kvec.getVector()[0] * kvec.getAk() * realPart;
+        result.row(startRow + 1) +=
+            fourPiVolume * kvec.getVector()[1] * kvec.getAk() * realPart;
+        result.row(startRow + 2) +=
+            fourPiVolume * kvec.getVector()[2] * kvec.getAk() * realPart;
+        startRow += 3;
       }
     }
   }
+  // Shape correction
+  // A bit ugly
+  for (Index i = 0; i < Index(_ewaldSegments.size()); ++i) {
+    EwdSegment& seg = _ewaldSegments[i];
+    Index startRow = segmentOffSet[i];
+    for (EwdSite& site : seg) {
+      switch (shape) {
+        case Shape::xyslab:
+          for (Index j = 2; j < systemSize; j = j + 3) {
+            result(startRow + 2, j) += fourPiVolume;
+          }
+          startRow += 3;
+          break;
+        case Shape::cube:
+        case Shape::sphere:
+          for (Index j = 0; j < systemSize; j = j + 3) {
+            result(startRow + 0, j + 0) += (fourPiVolume / 3.0);
+            result(startRow + 1, j + 1) += (fourPiVolume / 3.0);
+            result(startRow + 2, j + 2) += (fourPiVolume / 3.0);
+          }
+          startRow += 3;
+          break;
+        default:
+          throw std::runtime_error("Shape not implemented.");
+      }
+    }
+  }
+  // Intramolecular correction
+  for (Index segId = 0; segId < Index(_ewaldSegments.size()); ++segId) {
+    EwdSegment& currentSeg = _ewaldSegments[segId];
+    Index startRow = segmentOffSet[segId];
+    Index startCol = startRow;
+    for (Index site_ind1 = 0; site_ind1 < currentSeg.size(); ++site_ind1) {
+      for (Index site_ind2 = site_ind1 + 1; site_ind2 < currentSeg.size();
+           ++site_ind2) {
+        result.block<3, 3>(startRow + 3 * site_ind1,
+                           startCol + 3 * site_ind2) -=
+            inducedDipoleInteractionAtBy(currentSeg[site_ind1],
+                                         currentSeg[site_ind2]);
+        result.block<3, 3>(startRow + 3 * site_ind2,
+                           startCol + 3 * site_ind1) -=
+            inducedDipoleInteractionAtBy(currentSeg[site_ind2],
+                                         currentSeg[site_ind1]);
+      }
+    }
+  }
+  return result;
+}
+
+Eigen::VectorXcd KSpace::getSkInteractionVector(
+    const Eigen::Vector3d& kvector) {
+  Eigen::VectorXcd result(systemSize);
+  result.fill(0);
+
+#pragma omp parallel for
+  for (Index segId = 0; segId < Index(_ewaldSegments.size()); ++segId) {
+    EwdSegment& currentSeg = _ewaldSegments[segId];
+    Index offset = segmentOffSet[segId];
+    Index siteCounter = 0;
+    for (const EwdSite& site : currentSeg) {
+      std::complex<double> expKR = std::exp(ii * kvector.dot(site.getPos()));
+      result.segment<3>(offset + siteCounter) += expKR * ii * kvector;
+      siteCounter += 3;
+    }
+  }
+  return result;
 }
 
 void KSpace::computeShapeField(Shape shape) {
@@ -121,37 +199,6 @@ void KSpace::computeShapeField(Shape shape) {
   }
 }
 
-void KSpace::computeInducedShapeField(Shape shape) {
-  Eigen::Vector3d dip_tot = Eigen::Vector3d::Zero();
-  Eigen::Vector3d shapeField = Eigen::Vector3d::Zero();
-
-  // Compute total dipole
-  for (const EwdSegment& seg : _ewaldSegments) {
-    for (const EwdSite& sit : seg) {
-      dip_tot += sit.getInducedDipole();
-    }
-  }
-
-  switch (shape) {
-    case Shape::xyslab:
-      shapeField[2] = fourPiVolume * dip_tot[2];
-      break;
-    case Shape::cube:
-    case Shape::sphere:
-      shapeField = (fourPiVolume / 3.0) * dip_tot;
-      break;
-    default:
-      throw std::runtime_error("Shape not implemented.");
-  }
-
-  // Apply the field to the sites
-  for (EwdSegment& seg : _ewaldSegments) {
-    for (EwdSite& sit : seg) {
-      sit.addToInducedField(shapeField);
-    }
-  }
-}
-
 void KSpace::computeIntraMolecularCorrection() {
   for (EwdSegment& seg : _ewaldSegments) {
     for (EwdSite& sit1 : seg) {
@@ -161,17 +208,6 @@ void KSpace::computeIntraMolecularCorrection() {
     }
   }
 }
-
-void KSpace::computeIntraMolecularInducedCorrection() {
-  for (EwdSegment& seg : _ewaldSegments) {
-    for (EwdSite& sit1 : seg) {
-      sit1.addToInducedField(-inducedFieldAtBy(sit1, sit1));
-    }
-
-  }
-}
-
-void KSpace::testFunction() { ; }
 
 /**************************************************
  * PRIVATE FUNCTIONS                              *
@@ -192,6 +228,38 @@ void KSpace::computeDistanceVariables(Eigen::Vector3d distVec) {
   R2 = R1 * R1;
   rR1 = 1.0 / R1;
   rR2 = rR1 * rR1;
+}
+
+void KSpace::computeTholeVariables(const Eigen::Matrix3d& pol1,
+                                   const Eigen::Matrix3d& pol2) {
+  thole_u3 =
+      (R1 * R2) / std::sqrt((1.0 / 3.0) * (pol1.array() * pol2.array()).sum());
+
+  if (thole_u3 < 40) {
+    double thole_exp = std::exp(-thole * thole_u3);
+    double thole_u6 = thole_u3 * thole_u3;
+    l3 = 1 - thole_exp;
+    l5 = 1 - (1 + thole * thole_u3) * thole_exp;
+    l7 = 1 - (1 + thole * thole_u3 + (3. / 5.) * thole2 * thole_u6);
+    l9 = 1 - (1 + thole * thole_u3 + (18. / 35.) * thole2 * thole_u6 +
+              (9. / 35.) * thole3 * thole_u6 * thole_u3) *
+                 thole_exp;
+  } else {
+    l3 = l5 = l7 = l9 = 1.0;
+  }
+}
+
+Eigen::Matrix3d KSpace::inducedDipoleInteractionAtBy(EwdSite& site,
+                                                     const EwdSite& nbSite) {
+  computeDistanceVariables(_unit_cell.minImage(site, nbSite));
+  computeScreenedInteraction();
+  computeTholeVariables(site.getPolarizationMatrix(),
+                        nbSite.getPolarizationMatrix());
+
+  Eigen::Matrix3d interaction = Eigen::Matrix3d::Zero();
+  interaction.diagonal().array() += l3 * rR3s;
+  interaction += dr * dr.transpose() * l5 * rR5s;
+  return interaction;
 }
 
 Eigen::Vector3d KSpace::staticFieldAtBy(EwdSite& site, const EwdSite& nbSite) {
@@ -215,21 +283,6 @@ Eigen::Vector3d KSpace::staticFieldAtBy(EwdSite& site, const EwdSite& nbSite) {
         field += -rR7s * dr * dr.dot(nbSite.getQuadrupole() * dr);
       }
     }
-  }
-  return field;
-}
-
-Eigen::Vector3d KSpace::inducedFieldAtBy(EwdSite& site, const EwdSite& nbSite) {
-  computeDistanceVariables(_unit_cell.minImage(site, nbSite));
-  computeScreenedInteraction();
-
-  Eigen::Vector3d field = Eigen::Vector3d::Zero();
-  Index rank = nbSite.getRank();
-  if (R1 < 1e-2) {
-    field += 4.0 / 3.0 * a3 * rSqrtPi * nbSite.getInducedDipole();
-  } else {
-    field += nbSite.getInducedDipole() * rR3s;
-    field += -rR5s * dr * dr.dot(nbSite.getInducedDipole());
   }
   return field;
 }

@@ -33,9 +33,9 @@ namespace votca {
 namespace xtp {
 
 struct EwaldOptions {
-  double k_cutoff = 0.4;
-  double r_cutoff = 134.1;
-  double alpha = 6 / 18.897259;
+  double k_cutoff = 0.881;
+  double r_cutoff = 113.382969877926;
+  double alpha = 1 / 18.897259;
   double sharpness = 0.390;
 };
 

@@ -55,6 +55,8 @@ class RSpace {
       segmentOffSet.push_back(systemSize);
       systemSize += 3 * seg.size();
     }
+
+    std::cout << unitcell.getMatrix() << std::endl;
   };
 
   ~RSpace() = default;
