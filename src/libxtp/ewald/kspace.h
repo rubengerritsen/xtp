@@ -36,12 +36,10 @@ namespace xtp {
 
 class KVector;
 
-enum class Shape { xyslab, cube, sphere };
-
 class KSpace {
  public:
   KSpace(const EwaldOptions& options, const UnitCell& unitcell,
-         std::vector<EwdSegment>& ewaldSegments);
+         std::vector<EwdSegment>& ewaldSegments, Logger& log);
   ~KSpace() = default;
 
   void computeStaticField();
@@ -51,7 +49,7 @@ class KSpace {
 
  private:
   void computeTholeVariables(const Eigen::Matrix3d& pol1,
-                        const Eigen::Matrix3d& pol2);
+                             const Eigen::Matrix3d& pol2);
   std::complex<double> computeSk(const Eigen::Vector3d& kvector) const;
   double computeAk(const Eigen::Vector3d& kvector) const;
   void computeKVectors();
@@ -66,6 +64,7 @@ class KSpace {
                                                const EwdSite& nbSite);
 
   std::vector<Index> segmentOffSet;
+
   Index systemSize;
 
   double a1, a2, a3, a4, a5;  // alpha (splitting param) and its powers
@@ -86,6 +85,7 @@ class KSpace {
   double rR1, rR2;  // reciprocal (i.e. 1.0/ ...) distance and powers
   double pi = boost::math::constants::pi<double>();
   double rSqrtPi = 1.0 / std::sqrt(pi);
+  Logger& _log;
 };
 
 /**

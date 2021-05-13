@@ -92,8 +92,7 @@ class UnitCell {
     return r_sp - cell_matrix.col(0) * std::round(r_sp.x() / cell_matrix(0, 0));
   }
 
-  Eigen::Vector3d minImage(const EwdSegment seg1,
-                           const EwdSegment seg2) const {
+  Eigen::Vector3d minImage(const EwdSegment seg1, const EwdSegment seg2) const {
     return minImage(seg1.getPos(), seg2.getPos());
   }
 
@@ -102,11 +101,14 @@ class UnitCell {
   }
 
   friend std::ostream& operator<<(std::ostream& out, const UnitCell cell) {
-    out << "Cell Matrix:";
-    out << "\n" << 0.05291 * cell.getMatrix() << std::endl;
-    out << "Cell Matrix KSpace:";
-    out << "\n" << (1.0 / 0.05291) * cell.getInverseMatrix() << std::endl;
-    out << "Cell Volume: " << cell.getVolume() << std::endl;
+    Eigen::IOFormat CommaInitFmt(Eigen::StreamPrecision, Eigen::DontAlignCols,
+                                 ", ", " ", "[", "]", "", "");
+    out << "************* UNIT CELL PARAMS *************" << std::endl;                             
+    out << std::setprecision(3) << "RSpace Cell (nm)  : "
+        << (0.05291 * cell.getMatrix()).format(CommaInitFmt) << std::endl;
+    out << std::setprecision(3) << "KSpace Cell (nm-1): "
+        << ((1.0 / 0.05291) * cell.getInverseMatrix()).format(CommaInitFmt)
+        << std::endl;
     return out;
   }
 

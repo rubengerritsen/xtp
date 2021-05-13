@@ -40,30 +40,19 @@ void BackgroundPolarizer::Polarize(std::vector<EwdSegment>& ewaldSegments) {
 
   Index systemSize = computeSystemSize(ewaldSegments);
 
-  std::ofstream infile;
-  infile.open("inputStateXTP.txt");
-  infile << "id x y z q dx dy dz Ex Ey Ez" << std::endl;
-  for (const auto& seg : ewaldSegments) {
-    for (const auto& site : seg) {
-      infile << site << std::endl;
-    }
-  }
-  infile << std::endl;
+  XTP_LOG(Log::error, _log) << _unit_cell << std::endl;
+  XTP_LOG(Log::error, _log) << "Setup real and reciprocal space" << std::endl;
+  RSpace rspace(_options, _unit_cell, ewaldSegments, _log);
+  KSpace kspace(_options, _unit_cell, ewaldSegments, _log);
 
-  std::cout << "Setup real space and reciprocal space, precomputing K-vectors"
-            << std::endl;
-
-  // Setup the real and reciprocal space
-  RSpace rspace(_options, _unit_cell, ewaldSegments);
-  KSpace kspace(_options, _unit_cell, ewaldSegments);
-
-  std::cout << "Generate permanent fields" << std::endl;
+  XTP_LOG(Log::error, _log)
+      << "Compute real space permanent fields" << std::endl;
   rspace.computeStaticField();
-  std::cout << "Computed real space fields" << std::endl;
+  XTP_LOG(Log::error, _log)
+      << "Compute reciprocal space permanent fields" << std::endl;
   // kspace.computeStaticField();
-  // kspace.computeShapeField(Shape::cube);
+  // kspace.computeShapeField();
   // kspace.computeIntraMolecularCorrection();
-  std::cout << "Computed reciprocal space fields" << std::endl;
 
   std::ofstream infile2;
   infile2.open("staticFieldXTP.txt");
@@ -73,7 +62,8 @@ void BackgroundPolarizer::Polarize(std::vector<EwdSegment>& ewaldSegments) {
       infile2 << site << std::endl;
     }
   }
-  infile << std::endl;
+
+  exit(0);
 
   /*******************************************************
    * We turn the problem into a linear problem (A + B)x = b
@@ -144,7 +134,7 @@ void BackgroundPolarizer::Polarize(std::vector<EwdSegment>& ewaldSegments) {
     std::cout << "PCG had a numerical issue" << std::endl;
   }
 
-  x = 0.05291 * x; // convert to CTP units
+  x = 0.05291 * x;  // convert to CTP units
 
   std::ofstream outfile;
   outfile.open("inducedDipoleXTP.txt");

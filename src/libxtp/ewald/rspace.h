@@ -36,8 +36,8 @@ namespace xtp {
 class RSpace {
  public:
   RSpace(const EwaldOptions& options, const UnitCell& unitcell,
-         std::vector<EwdSegment>& ewaldSegments)
-      : _unit_cell(unitcell), _ewaldSegments(ewaldSegments) {
+         std::vector<EwdSegment>& ewaldSegments, Logger& log)
+      : _unit_cell(unitcell), _ewaldSegments(ewaldSegments), _log(log) {
     cutoff = options.r_cutoff;
     a1 = options.alpha;
     a2 = a1 * a1;
@@ -48,15 +48,26 @@ class RSpace {
     thole2 = thole * thole;
     thole3 = thole * thole2;
 
-    setupNeighbourList();
-
     systemSize = 0;
     for (const auto& seg : ewaldSegments) {
       segmentOffSet.push_back(systemSize);
       systemSize += 3 * seg.size();
     }
 
-    std::cout << unitcell.getMatrix() << std::endl;
+    maxCopies = _unit_cell.getNrOfRealSpaceCopiesForCutOff(cutoff);
+
+    XTP_LOG(Log::error, _log)
+        << "************* RSPACE: PARAMETERS *************" << std::endl;
+    XTP_LOG(Log::error, _log) << "rspace cutoff: " << cutoff << "a.u. ("
+                              << 0.05291 * cutoff << " nm)" << std::endl;
+    XTP_LOG(Log::error, _log) << "Ewald splitting: " << a1 << "a.u. ("
+                              << 18.897259 * a1 << " nm-1)" << std::endl;
+    XTP_LOG(Log::error, _log) << "Thole sharpness: " << thole << std::endl;
+    XTP_LOG(Log::error, _log)
+        << "Max R copies: [" << maxCopies[0] << ", " << maxCopies[1] << ", "
+        << maxCopies[2] << "]" << std::endl << std::endl;
+
+    setupNeighbourList();
   };
 
   ~RSpace() = default;
@@ -94,6 +105,7 @@ class RSpace {
   /****************************/
   /* VARIABLES                */
   /****************************/
+
   std::vector<Index> segmentOffSet;
   Index systemSize;
   double cutoff;
@@ -112,6 +124,9 @@ class RSpace {
 
   // rRns = reciprocal R, of order n, screened with erfc
   double rR1s, rR3s, rR5s, rR7s;
+  std::array<Index, 3> maxCopies;
+
+  Logger& _log;
 };
 }  // namespace xtp
 }  // namespace votca

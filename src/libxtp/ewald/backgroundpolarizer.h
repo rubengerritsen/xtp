@@ -32,11 +32,14 @@
 namespace votca {
 namespace xtp {
 
+enum class Shape { xyslab, cube, sphere };
+
 struct EwaldOptions {
-  double k_cutoff = 0.881;
-  double r_cutoff = 113.382969877926;
-  double alpha = 1 / 18.897259;
-  double sharpness = 0.390;
+  double k_cutoff;
+  double r_cutoff;
+  double alpha;
+  double sharpness;
+  Shape shape;
 };
 
 class BackgroundPolarizer {

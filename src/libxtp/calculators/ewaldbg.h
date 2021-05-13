@@ -25,6 +25,7 @@
 #include "votca/xtp/qmcalculator.h"
 #include "votca/xtp/logger.h"
 #include "votca/xtp/classicalsegment.h"
+#include "ewald/backgroundpolarizer.h"
 
 namespace votca {
 namespace xtp {
@@ -45,6 +46,7 @@ class EwaldBG final : public QMCalculator {
   bool Evaluate(Topology &top);
 
  private:
+ EwaldOptions ewd_options;
  std::string _dummy;
  std::string _mapfile;
  Logger _log;

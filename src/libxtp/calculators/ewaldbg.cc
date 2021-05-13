@@ -19,20 +19,30 @@
 #include "votca/xtp/segmentmapper.h"
 #include "votca/xtp/topology.h"
 
-
 // Local private VOTCA includes
-#include "ewaldbg.h"
 #include "ewald/ewd_segment.h"
 #include "ewald/unitcell.h"
-#include "ewald/backgroundpolarizer.h"
+#include "ewaldbg.h"
 
 namespace votca {
 namespace xtp {
 
 void EwaldBG::ParseOptions(const tools::Property& options) {
-
-  _dummy = options.get(".dummy").as<std::string>();
   _mapfile = options.get(".mapfile").as<std::string>();
+  ewd_options.alpha = options.get(".alpha").as<double>();
+  ewd_options.k_cutoff = options.get(".k_cutoff").as<double>();
+  ewd_options.r_cutoff = options.get(".r_cutoff").as<double>();
+  ewd_options.sharpness = options.get(".thole_sharpness").as<double>();
+  std::string shape_str = options.get(".shape").as<std::string>();
+  if (shape_str == "cube") {
+    ewd_options.shape = Shape::cube;
+  } else if (shape_str == "sphere") {
+    ewd_options.shape = Shape::sphere;
+  } else if (shape_str == "xyslab") {
+    ewd_options.shape = Shape::xyslab;
+  } else {
+    throw std::runtime_error("Unknown shape in option file\n");
+  }
 }
 
 bool EwaldBG::Evaluate(Topology& top) {
@@ -52,16 +62,14 @@ bool EwaldBG::Evaluate(Topology& top) {
 
   // Convert data to a cartesian representation
   std::vector<EwdSegment> _ewald_background;
-  for(const PolarSegment& pseg : _polar_background)
-  {
+  for (const PolarSegment& pseg : _polar_background) {
     EwdSegment eseg(pseg);
     _ewald_background.push_back(eseg);
   }
 
   // Polarize the neutral background
   UnitCell unit_cell(top.getBox());
-  EwaldOptions options;
-  BackgroundPolarizer BgPol(_log, unit_cell, options);
+  BackgroundPolarizer BgPol(_log, unit_cell, ewd_options);
   BgPol.Polarize(_ewald_background);
 
   // Update the original data in spherical coordinates

@@ -153,8 +153,6 @@ void RSpace::computeTholeVariables(const Eigen::Matrix3d& pol1,
 }
 
 void RSpace::setupNeighbourList() {
-  std::array<Index, 3> maxCopies =
-      _unit_cell.getNrOfRealSpaceCopiesForCutOff(cutoff);
   _nbList.setSize(_ewaldSegments.size());
 
 #pragma omp parallel for
