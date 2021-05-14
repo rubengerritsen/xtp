@@ -29,9 +29,11 @@ namespace xtp {
 
 void EwaldBG::ParseOptions(const tools::Property& options) {
   _mapfile = options.get(".mapfile").as<std::string>();
-  ewd_options.alpha = options.get(".alpha").as<double>();
-  ewd_options.k_cutoff = options.get(".k_cutoff").as<double>();
-  ewd_options.r_cutoff = options.get(".r_cutoff").as<double>();
+  ewd_options.alpha = (1.0/tools::conv::nm2bohr) * options.get(".alpha").as<double>();
+  ewd_options.k_cutoff =
+      (1.0/tools::conv::nm2bohr) * options.get(".k_cutoff").as<double>();
+  ewd_options.r_cutoff =
+      tools::conv::nm2bohr * options.get(".r_cutoff").as<double>();
   ewd_options.sharpness = options.get(".thole_sharpness").as<double>();
   std::string shape_str = options.get(".shape").as<std::string>();
   if (shape_str == "cube") {
@@ -69,6 +71,15 @@ bool EwaldBG::Evaluate(Topology& top) {
 
   // Polarize the neutral background
   UnitCell unit_cell(top.getBox());
+
+  // Place atoms in the simulation box
+  for (EwdSegment& seg : _ewald_background){
+    for ( EwdSite& site : seg){
+      site.updatePos(unit_cell.placeCoordInBox(site.getPos()));
+    }
+  }
+
+
   BackgroundPolarizer BgPol(_log, unit_cell, ewd_options);
   BgPol.Polarize(_ewald_background);
 

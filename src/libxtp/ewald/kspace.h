@@ -43,9 +43,9 @@ class KSpace {
   ~KSpace() = default;
 
   void computeStaticField();
-  void computeShapeField(Shape shape);
+  void computeShapeField();
   void computeIntraMolecularCorrection();
-  Eigen::MatrixXd getInducedDipoleInteraction(Shape shape);
+  Eigen::MatrixXd getInducedDipoleInteraction();
 
  private:
   void computeTholeVariables(const Eigen::Matrix3d& pol1,
@@ -86,6 +86,7 @@ class KSpace {
   double pi = boost::math::constants::pi<double>();
   double rSqrtPi = 1.0 / std::sqrt(pi);
   Logger& _log;
+  EwaldOptions options;
 };
 
 /**

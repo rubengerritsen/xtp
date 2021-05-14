@@ -28,7 +28,7 @@ namespace xtp {
 
 KSpace::KSpace(const EwaldOptions& options, const UnitCell& unitcell,
                std::vector<EwdSegment>& ewaldSegments, Logger& log)
-    : _unit_cell(unitcell), _ewaldSegments(ewaldSegments), _log(log) {
+    : options(options), _unit_cell(unitcell), _ewaldSegments(ewaldSegments), _log(log) {
   a1 = options.alpha;
   a2 = a1 * a1;
   a3 = a1 * a2;
@@ -92,7 +92,7 @@ void KSpace::computeStaticField() {
   }
 }
 
-Eigen::MatrixXd KSpace::getInducedDipoleInteraction(Shape shape) {
+Eigen::MatrixXd KSpace::getInducedDipoleInteraction() {
   Eigen::MatrixXd result(systemSize, systemSize);
   result.fill(0);
   // Basic induced field
@@ -121,7 +121,7 @@ Eigen::MatrixXd KSpace::getInducedDipoleInteraction(Shape shape) {
     EwdSegment& seg = _ewaldSegments[i];
     Index startRow = segmentOffSet[i];
     for (EwdSite& site : seg) {
-      switch (shape) {
+      switch (options.shape) {
         case Shape::xyslab:
           for (Index j = 2; j < systemSize; j = j + 3) {
             result(startRow + 2, j) += fourPiVolume;
@@ -183,7 +183,7 @@ Eigen::VectorXcd KSpace::getSkInteractionVector(
   return result;
 }
 
-void KSpace::computeShapeField(Shape shape) {
+void KSpace::computeShapeField() {
   Eigen::Vector3d dip_tot = Eigen::Vector3d::Zero();
   Eigen::Vector3d shapeField = Eigen::Vector3d::Zero();
 
@@ -195,13 +195,13 @@ void KSpace::computeShapeField(Shape shape) {
     }
   }
 
-  switch (shape) {
+  switch (options.shape) {
     case Shape::xyslab:
-      shapeField[2] = fourPiVolume * dip_tot[2];
+      shapeField[2] = -fourPiVolume * dip_tot[2];
       break;
     case Shape::cube:
     case Shape::sphere:
-      shapeField = (fourPiVolume / 3.0) * dip_tot;
+      shapeField = -(fourPiVolume / 3.0) * dip_tot;
       break;
     default:
       throw std::runtime_error("Shape not implemented.");

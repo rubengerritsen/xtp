@@ -52,6 +52,7 @@ class UnitCell {
     }
     cell_matrix_inv = cell_matrix.inverse();
     cell_volume = L1.dot(L2.cross(L3));
+    centerOfBox = L1*0.5+L2*0.5+L3*0.5;
   }
 
   ~UnitCell() = default;
@@ -90,6 +91,10 @@ class UnitCell {
     Eigen::Vector3d r_sp =
         r_dp - cell_matrix.col(1) * std::round(r_dp.y() / cell_matrix(1, 1));
     return r_sp - cell_matrix.col(0) * std::round(r_sp.x() / cell_matrix(0, 0));
+  }  
+
+  Eigen::Vector3d placeCoordInBox(const Eigen::Vector3d pos){
+    return minImage(pos, centerOfBox) + centerOfBox;
   }
 
   Eigen::Vector3d minImage(const EwdSegment seg1, const EwdSegment seg2) const {
@@ -140,6 +145,7 @@ class UnitCell {
 
  private:
   double cell_volume;
+  Eigen::Vector3d centerOfBox;
   Eigen::Matrix3d cell_matrix;
   Eigen::Matrix3d cell_matrix_inv;
 

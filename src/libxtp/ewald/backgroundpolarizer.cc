@@ -56,7 +56,7 @@ void BackgroundPolarizer::Polarize(std::vector<EwdSegment>& ewaldSegments) {
 
   std::ofstream infile2;
   infile2.open("staticFieldXTP.txt");
-  infile2 << "id x y z q dx dy dz Ex Ey Ez" << std::endl;
+  infile2 << "id x y z q Ex Ey Ez" << std::endl;
   for (const auto& seg : ewaldSegments) {
     for (const auto& site : seg) {
       infile2 << site << std::endl;
@@ -97,7 +97,7 @@ void BackgroundPolarizer::Polarize(std::vector<EwdSegment>& ewaldSegments) {
       rspace.getInducedDipoleInteraction();
   std::cout << "Setup real space part of dipole interaction matrix"
             << std::endl;
-  inducedDipoleInteraction += kspace.getInducedDipoleInteraction(Shape::cube);
+  inducedDipoleInteraction += kspace.getInducedDipoleInteraction();
   std::cout << "Setup reciprocal space part of dipole interaction matrix"
             << std::endl;
 

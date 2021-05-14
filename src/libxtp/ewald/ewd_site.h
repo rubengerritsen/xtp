@@ -34,10 +34,9 @@ class EwdSite {
   ~EwdSite() = default;
 
   friend std::ostream& operator<<(std::ostream& out, const EwdSite& site) {
-    out << site.getId() << std::fixed << std::setprecision(2) << " "
+    out << site.getId() << std::fixed << std::setprecision(4) << " "
         << 0.05291 * site.getPos().transpose() << " "
         << site.getCharge() << std::scientific << std::setprecision(4) << " "
-        << 0.05291 * site.getStaticDipole().transpose() << " "
         << 5.142e11 * site.getStaticField().transpose();
     return out;
   }
@@ -59,6 +58,8 @@ class EwdSite {
   Index getId() const { return _id; }
 
   const Eigen::Vector3d& getPos() const { return _position; }
+
+  void updatePos(Eigen::Vector3d pos) { _position = pos;}
 
   const Eigen::Vector3d& getStaticDipole() const { return _dipole_static; }
 
