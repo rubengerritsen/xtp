@@ -159,11 +159,12 @@ void RSpace::setupNeighbourList() {
        ++segId) {
     EwdSegment& currentSeg = _ewaldSegments[segId];
     for (const EwdSegment seg : _ewaldSegments) {
-      Eigen::Vector3d minImage_dr = _unit_cell.minImage(currentSeg, seg);
+      Eigen::Vector3d minImage_dr = _unit_cell.minImage(seg, currentSeg);
+      Eigen::Vector3d dr_dir = seg.getPos() - currentSeg.getPos();
       // triple for-loop is over all unitcell copies
-      for (Index n1 = -maxCopies[0]; n1 < maxCopies[0]+1; ++n1) {
-        for (Index n2 = -maxCopies[1]; n2 < maxCopies[1]+1; ++n2) {
-          for (Index n3 = -maxCopies[2]; n3 < maxCopies[2]+1; ++n3) {
+      for (Index n1 = -maxCopies[0]; n1 < maxCopies[0]; ++n1) {
+        for (Index n2 = -maxCopies[1]; n2 < maxCopies[1]; ++n2) {
+          for (Index n3 = -maxCopies[2]; n3 < maxCopies[2]; ++n3) {
             if (n1 == 0 && n2 == 0 && n3 == 0 &&
                 currentSeg.getId() == seg.getId()) {
               continue;
@@ -171,10 +172,11 @@ void RSpace::setupNeighbourList() {
             // LVector is the vector pointing to the n1,n2,n3th box
             Eigen::Vector3d lvector = _unit_cell.getLVector(n1, n2, n3);
             Eigen::Vector3d dr_l = minImage_dr + lvector;
+            Eigen::Vector3d shift = dr_l - dr_dir;
             double dist = dr_l.norm();
             if (dist < cutoff) {
               _nbList.addNeighbourTo(
-                  segId, Neighbour(seg.getId(), dr_l, lvector, dist));
+                  segId, Neighbour(seg.getId(), dr_l, shift, dist));
             }
           }
         }

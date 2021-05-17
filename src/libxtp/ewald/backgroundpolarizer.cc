@@ -55,7 +55,7 @@ void BackgroundPolarizer::Polarize(std::vector<EwdSegment>& ewaldSegments) {
   // kspace.computeIntraMolecularCorrection();
 
   std::ofstream infile2;
-  infile2.open("staticFieldXTP.txt");
+  infile2.open("staticFieldXTP.txt"); 
   infile2 << "id x y z q Ex Ey Ez" << std::endl;
   for (const auto& seg : ewaldSegments) {
     for (const auto& site : seg) {
