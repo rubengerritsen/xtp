@@ -35,8 +35,8 @@ class EwdSite {
 
   friend std::ostream& operator<<(std::ostream& out, const EwdSite& site) {
     out << site.getId() << std::fixed << std::setprecision(4) << " "
-        << 0.05291 * site.getPos().transpose() << " "
-        << site.getCharge() << std::scientific << std::setprecision(4) << " "
+        << 0.05291 * site.getPos().transpose() << " " << site.getCharge()
+        << std::scientific << std::setprecision(4) << " "
         << 5.142e11 * site.getStaticField().transpose();
     return out;
   }
@@ -59,7 +59,7 @@ class EwdSite {
 
   const Eigen::Vector3d& getPos() const { return _position; }
 
-  void updatePos(Eigen::Vector3d pos) { _position = pos;}
+  void updatePos(Eigen::Vector3d pos) { _position = pos; }
 
   const Eigen::Vector3d& getStaticDipole() const { return _dipole_static; }
 
@@ -67,7 +67,7 @@ class EwdSite {
     return _dipole_static + _dipole_induced;
   }
 
-  const Eigen::Matrix3d& getPolarizationMatrix() const {return _polarization;}
+  const Eigen::Matrix3d& getPolarizationMatrix() const { return _polarization; }
 
   const Eigen::Vector3d getInducedDipole() const { return _dipole_induced; }
 
@@ -76,6 +76,8 @@ class EwdSite {
   const Eigen::Matrix3d& getQuadrupole() const { return _quadrupole; }
 
   Index getRank() const { return _rank; }
+
+  std::string getElement() const { return _element;}
 
   const Eigen::Vector3d& getStaticField() const { return _field_static; }
 
@@ -98,6 +100,7 @@ class EwdSite {
   Eigen::Vector3d _field_static = Eigen::Vector3d::Zero();
   Eigen::Vector3d _field_induced = Eigen::Vector3d::Zero();
   Eigen::Matrix3d _polarization;
+  std::string _element;
 };
 }  // namespace xtp
 }  // namespace votca

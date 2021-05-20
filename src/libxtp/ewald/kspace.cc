@@ -77,7 +77,6 @@ KSpace::KSpace(const EwaldOptions& options, const UnitCell& unitcell,
 }
 
 void KSpace::computeStaticField() {
-#pragma omp parallel for
   for (Index i = 0; i < Index(_ewaldSegments.size()); ++i) {
     EwdSegment& seg = _ewaldSegments[i];
     for (EwdSite& site : seg) {
@@ -169,7 +168,6 @@ Eigen::VectorXcd KSpace::getSkInteractionVector(
   Eigen::VectorXcd result(systemSize);
   result.fill(0);
 
-#pragma omp parallel for
   for (Index segId = 0; segId < Index(_ewaldSegments.size()); ++segId) {
     EwdSegment& currentSeg = _ewaldSegments[segId];
     Index offset = segmentOffSet[segId];
@@ -210,7 +208,7 @@ void KSpace::computeShapeField() {
   // Apply the field to the sites
   for (EwdSegment& seg : _ewaldSegments) {
     for (EwdSite& sit : seg) {
-      sit.addToStaticField(shapeField);
+      sit.addToStaticField(-shapeField);
     }
   }
 }
@@ -267,7 +265,7 @@ void KSpace::computeTholeVariables(const Eigen::Matrix3d& pol1,
 
 Eigen::Matrix3d KSpace::inducedDipoleInteractionAtBy(EwdSite& site,
                                                      const EwdSite& nbSite) {
-  computeDistanceVariables(_unit_cell.minImage(site, nbSite));
+  computeDistanceVariables( site.getPos() - nbSite.getPos());
   computeScreenedInteraction();
   computeTholeVariables(site.getPolarizationMatrix(),
                         nbSite.getPolarizationMatrix());
@@ -279,7 +277,7 @@ Eigen::Matrix3d KSpace::inducedDipoleInteractionAtBy(EwdSite& site,
 }
 
 Eigen::Vector3d KSpace::staticFieldAtBy(EwdSite& site, const EwdSite& nbSite) {
-  computeDistanceVariables(_unit_cell.minImage(site, nbSite));
+  computeDistanceVariables( site.getPos() - nbSite.getPos());
   computeScreenedInteraction();
 
   Eigen::Vector3d field = Eigen::Vector3d::Zero();
@@ -336,7 +334,6 @@ void KSpace::computeKVectors() {
     }
   }
   std::sort(_kvector_list.begin(), _kvector_list.end());
-#pragma omp parallel for
   for (Index i = 0; i < static_cast<Index>(_kvector_list.size()); ++i) {
     KVector& kvec = _kvector_list[i];
     kvec.setSk(computeSk(kvec.getVector()));

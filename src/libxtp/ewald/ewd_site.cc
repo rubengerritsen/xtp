@@ -36,6 +36,7 @@ EwdSite::EwdSite(const PolarSite& pol) {
   _dipole_static = pol.getStaticDipole();
   _dipole_induced = Eigen::Vector3d::Zero();
   _polarization = pol.getpolarization();
+  _element = pol.getElement();
   // the 1/3 saves factors in further calculations
   // The quadrupole in the Ewald site should by multiplied by 3 to obtain the
   // true quadrupole

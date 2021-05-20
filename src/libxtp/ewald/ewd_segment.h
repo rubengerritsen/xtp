@@ -66,6 +66,18 @@ class EwdSegment {
 
   Index size() const { return _sites.size();}
 
+  void calcPos() {
+    tools::Elements element;
+    Eigen::Vector3d pos = Eigen::Vector3d::Zero();
+    double totalmass = 0.0;
+    for (const auto& site : _sites) {
+      double mass = element.getMass(site.getElement());
+      totalmass += mass;
+      pos += mass * site.getPos();
+    }
+    _position = pos / totalmass;
+  }
+
  private:
   Index _id;
   std::vector<EwdSite> _sites;

@@ -50,12 +50,12 @@ void BackgroundPolarizer::Polarize(std::vector<EwdSegment>& ewaldSegments) {
   rspace.computeStaticField();
   XTP_LOG(Log::error, _log)
       << "Compute reciprocal space permanent fields" << std::endl;
-  // kspace.computeStaticField();
-  // kspace.computeShapeField();
-  // kspace.computeIntraMolecularCorrection();
+  kspace.computeStaticField();
+  kspace.computeShapeField();
+  kspace.computeIntraMolecularCorrection();
 
   std::ofstream infile2;
-  infile2.open("staticFieldXTP.txt"); 
+  infile2.open("staticFieldXTP.txt");
   infile2 << "id x y z q Ex Ey Ez" << std::endl;
   for (const auto& seg : ewaldSegments) {
     for (const auto& site : seg) {

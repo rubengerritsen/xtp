@@ -77,6 +77,8 @@ bool EwaldBG::Evaluate(Topology& top) {
     for (EwdSite& site : seg) {
       site.updatePos(unit_cell.placeCoordInBox(site.getPos()));
     }
+    // Should be deleted when merged and after compare with ctp is done
+    seg.calcPos();
   }
 
   // Polarize the neutral background
