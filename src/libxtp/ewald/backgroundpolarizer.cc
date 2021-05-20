@@ -45,6 +45,7 @@ void BackgroundPolarizer::Polarize(std::vector<EwdSegment>& ewaldSegments) {
   RSpace rspace(_options, _unit_cell, ewaldSegments, _log);
   KSpace kspace(_options, _unit_cell, ewaldSegments, _log);
 
+
   XTP_LOG(Log::error, _log)
       << "Compute real space permanent fields" << std::endl;
   rspace.computeStaticField();
