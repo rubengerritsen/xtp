@@ -78,7 +78,7 @@ class RSpace {
 
   void computeIntraMolecularField();
 
-  Eigen::MatrixXd getInducedDipoleInteraction();
+  void addInducedDipoleInteractionTo(Eigen::MatrixXd& result);
 
  private:
   void computeDistanceVariables(Eigen::Vector3d distVec);

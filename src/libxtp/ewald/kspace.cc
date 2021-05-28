@@ -94,69 +94,70 @@ void KSpace::computeStaticField() {
   }
 }
 
-Eigen::MatrixXd KSpace::getInducedDipoleInteraction() {
-  Eigen::MatrixXd result(systemSize, systemSize);
-  result.fill(0);
-  // Basic induced field
-  // for (const KVector& kvec : _kvector_list) {
-  //   Eigen::VectorXcd SkInteraction =
-  //   getSkInteractionVector(kvec.getVector()); for (Index i = 0; i <
-  //   Index(_ewaldSegments.size()); ++i) {
-  //     EwdSegment& seg = _ewaldSegments[i];
-  //     Index startRow = segmentOffSet[i];
-  //     for (EwdSite& site : seg) {
-  //       double kPosDot = kvec.getVector().dot(site.getPos());
-  //       Eigen::VectorXd realPart = std::sin(kPosDot) * SkInteraction.real() +
-  //                                  std::cos(kPosDot) * SkInteraction.imag();
-  //       result.row(startRow + 0) +=
-  //           fourPiVolume * kvec.getVector()[0] * kvec.getAk() * realPart;
-  //       result.row(startRow + 1) +=
-  //           fourPiVolume * kvec.getVector()[1] * kvec.getAk() * realPart;
-  //       result.row(startRow + 2) +=
-  //           fourPiVolume * kvec.getVector()[2] * kvec.getAk() * realPart;
-  //       startRow += 3;
-  //     }
-  //   }
-  // }
-  // Shape correction
-  // A bit ugly
-  // for (Index i = 0; i < Index(_ewaldSegments.size()); ++i) {
-  //   EwdSegment& seg = _ewaldSegments[i];
-  //   Index startRow = segmentOffSet[i];
-  //   for (EwdSite& site : seg) {
-  //     switch (options.shape) {
-  //       case Shape::xyslab:
-  //         for (Index j = 2; j < systemSize; j = j + 3) {
-  //           result(startRow + 2, j) += fourPiVolume;
-  //         }
-  //         startRow += 3;
-  //         break;
-  //       case Shape::cube:
-  //       case Shape::sphere:
-  //         for (Index j = 0; j < systemSize; j = j + 3) {
-  //           result(startRow + 0, j + 0) += (fourPiVolume / 3.0);
-  //           result(startRow + 1, j + 1) += (fourPiVolume / 3.0);
-  //           result(startRow + 2, j + 2) += (fourPiVolume / 3.0);
-  //         }
-  //         startRow += 3;
-  //         break;
-  //       default:
-  //         throw std::runtime_error("Shape not implemented.");
-  //     }
-  //   }
-  // }
+void KSpace::addInducedDipoleInteractionTo(Eigen::MatrixXd& result) {
+  for (const KVector& kvec : _kvector_list) {
+    Eigen::VectorXcd SkInteraction = getSkInteractionVector(kvec.getVector());
+    for (Index i = 0; i < Index(_ewaldSegments.size()); ++i) {
+      EwdSegment& seg = _ewaldSegments[i];
+      Index startRow = segmentOffSet[i];
+      for (EwdSite& site : seg) {
+        double kPosDot = kvec.getVector().dot(site.getPos());
+        Eigen::VectorXd realPart = std::cos(kPosDot) * SkInteraction.real() +
+                                   std::sin(kPosDot) * SkInteraction.imag();
+        result.row(startRow + 0) +=
+            fourPiVolume * kvec.getVector()[0] * kvec.getAk() * realPart;
+        result.row(startRow + 1) +=
+            fourPiVolume * kvec.getVector()[1] * kvec.getAk() * realPart;
+        result.row(startRow + 2) +=
+            fourPiVolume * kvec.getVector()[2] * kvec.getAk() * realPart;
+        startRow += 3;
+      }
+    }
+  }
+}
+
+
+void KSpace::addShapeCorrectionTo(Eigen::MatrixXd& result) {
+  for (Index i = 0; i < Index(_ewaldSegments.size()); ++i) {
+    EwdSegment& seg = _ewaldSegments[i];
+    Index startRow = segmentOffSet[i];
+    for (EwdSite& site : seg) {
+      switch (options.shape) {
+        case Shape::xyslab:
+          for (Index j = 2; j < systemSize; j = j + 3) {
+            result(startRow + 2, j) += fourPiVolume;
+          }
+          startRow += 3;
+          break;
+        case Shape::cube:
+        case Shape::sphere:
+          for (Index j = 0; j < systemSize; j = j + 3) {
+            result(startRow + 0, j + 0) += (fourPiVolume / 3.0);
+            result(startRow + 1, j + 1) += (fourPiVolume / 3.0);
+            result(startRow + 2, j + 2) += (fourPiVolume / 3.0);
+          }
+          startRow += 3;
+          break;
+        default:
+          throw std::runtime_error("Shape not implemented.");
+      }
+    }
+  }
+}
+
+void KSpace::addSICorrectionTo(Eigen::MatrixXd& result) {
   // Intramolecular correction
   for (Index segId = 0; segId < Index(_ewaldSegments.size()); ++segId) {
     EwdSegment& currentSeg = _ewaldSegments[segId];
     Index startRow = segmentOffSet[segId];
     Index startCol = startRow;
     for (Index site_ind1 = 0; site_ind1 < currentSeg.size(); ++site_ind1) {
-      result.block<3, 3>(startRow + 3 * site_ind1, startCol + 3 * site_ind1) -=
+      result.block<3, 3>(startRow + 3 * site_ind1, startCol + 3 * site_ind1)
+      -=
           inducedDipoleInteractionAtBy(currentSeg[site_ind1],
                                        currentSeg[site_ind1]);
     }
   }
-  return result;
 }
 
 Eigen::VectorXcd KSpace::getSkInteractionVector(
@@ -169,8 +170,9 @@ Eigen::VectorXcd KSpace::getSkInteractionVector(
     Index offset = segmentOffSet[segId];
     Index siteCounter = 0;
     for (const EwdSite& site : currentSeg) {
-      std::complex<double> expKR = std::exp(ii * kvector.dot(site.getPos()));
-      result.segment<3>(offset + siteCounter) += expKR * ii * kvector;
+      std::complex<double> expKR =
+          std::exp(-1.0 * ii * kvector.dot(site.getPos()));
+      result.segment<3>(offset + siteCounter) += -expKR * ii * kvector;
       siteCounter += 3;
     }
   }

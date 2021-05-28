@@ -45,7 +45,10 @@ class KSpace {
   void computeStaticField();
   void computeShapeField();
   void computeIntraMolecularCorrection();
-  Eigen::MatrixXd getInducedDipoleInteraction();
+
+  void addInducedDipoleInteractionTo(Eigen::MatrixXd& result);
+  void addShapeCorrectionTo(Eigen::MatrixXd& result);
+  void addSICorrectionTo(Eigen::MatrixXd& result);
 
  private:
   void computeTholeVariables(const Eigen::Matrix3d& pol1,
