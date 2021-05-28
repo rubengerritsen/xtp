@@ -134,7 +134,7 @@ void RSpace::computeTholeVariables(const Eigen::Matrix3d& pol1,
   thole_u3 =
       (R1 * R2) / std::sqrt((1.0 / 3.0) * (pol1.array() * pol2.array()).sum());
 
-  if (thole_u3 < 40) {
+  if (thole * thole_u3 < 40) {
     double thole_exp = std::exp(-thole * thole_u3);
     double thole_u6 = thole_u3 * thole_u3;
     l3 = 1 - thole_exp;
@@ -212,7 +212,7 @@ Eigen::Vector3d RSpace::inducedFieldAtBy(EwdSite& site, const EwdSite& nbSite,
 
   Eigen::Vector3d field = Eigen::Vector3d::Zero();
   field += nbSite.getInducedDipole() * l3 * rR3s;
-  field += dr * nbSite.getInducedDipole().dot(dr) * l5 * rR5s;
+  field -= dr * nbSite.getInducedDipole().dot(dr) * l5 * rR5s;
   return field;
 }
 
@@ -225,7 +225,7 @@ Eigen::Matrix3d RSpace::inducedDipoleInteractionAtBy(
 
   Eigen::Matrix3d interaction = Eigen::Matrix3d::Zero();
   interaction.diagonal().array() += l3 * rR3s;
-  interaction += dr * dr.transpose() * l5 * rR5s;
+  interaction -= dr * dr.transpose() * l5 * rR5s;
   return interaction;
 }
 

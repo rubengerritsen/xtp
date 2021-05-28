@@ -45,7 +45,6 @@ void BackgroundPolarizer::Polarize(std::vector<EwdSegment>& ewaldSegments) {
   RSpace rspace(_options, _unit_cell, ewaldSegments, _log);
   KSpace kspace(_options, _unit_cell, ewaldSegments, _log);
 
-
   XTP_LOG(Log::error, _log)
       << "Compute real space permanent fields" << std::endl;
   rspace.computeStaticField();
@@ -63,8 +62,6 @@ void BackgroundPolarizer::Polarize(std::vector<EwdSegment>& ewaldSegments) {
       infile2 << site << std::endl;
     }
   }
-
-  exit(0);
 
   /*******************************************************
    * We turn the problem into a linear problem (A + B)x = b
@@ -93,27 +90,53 @@ void BackgroundPolarizer::Polarize(std::vector<EwdSegment>& ewaldSegments) {
   }
   std::cout << "Computed initial guess" << std::endl;
 
+  Eigen::VectorXd initialGuess2 = initialGuess * 0.0529177249;
+  Eigen::VectorXd staticField2 = staticField * 5.14220652e11;
+  std::ofstream outfile;
+  outfile.open("inducedDipoleXTP.txt");
+  outfile << "idx idy idz Ex Ey Ez" << std::endl;
+  for (Index i = 0; i < systemSize; i += 3) {
+    outfile << initialGuess2[i + 0] << " " << initialGuess2[i + 1] << " "
+            << initialGuess2[i + 2] << "   " << staticField2[i + 0] << " "
+            << staticField2[i + 1] << " " << staticField2[i + 2] << "\n";
+  }
+  outfile << std::endl;
+
   // Set up the dipole interaction matrix
   Eigen::MatrixXd inducedDipoleInteraction =
       rspace.getInducedDipoleInteraction();
   std::cout << "Setup real space part of dipole interaction matrix"
             << std::endl;
-  inducedDipoleInteraction += kspace.getInducedDipoleInteraction();
-  std::cout << "Setup reciprocal space part of dipole interaction matrix"
-            << std::endl;
+  // inducedDipoleInteraction += kspace.getInducedDipoleInteraction();
+  // std::cout << "Setup reciprocal space part of dipole interaction matrix"
+  //           << std::endl;
 
-  // Add  the inverse polarization
-  Index diagIndex = 0;
-  for (auto& seg : ewaldSegments) {
-    for (auto& site : seg) {
-      inducedDipoleInteraction.block<3, 3>(diagIndex, diagIndex) +=
-          site.getPolarizationMatrix().inverse();
-      diagIndex += 3;
-    }
+  //Add  the inverse polarization
+  // Index diagIndex = 0;
+  // for (auto& seg : ewaldSegments) {
+  //   for (auto& site : seg) {
+  //     inducedDipoleInteraction.block<3, 3>(diagIndex, diagIndex) +=
+  //         site.getPolarizationMatrix().inverse();
+  //     diagIndex += 3;
+  //   }
+  // }
+  // std::cout << "Setup the inverse polarization matrix. \nStarting "
+  //              "preconditioned conjugate gradient solver"
+  //           << std::endl;
+
+  Eigen::VectorXd inducedField = inducedDipoleInteraction * initialGuess;
+
+  std::ofstream outfile4;
+  outfile4.open("indFieldXTP.txt");
+  outfile4 << "Ex Ey Ez" << std::endl;
+  for (Index i = 0; i < systemSize; i += 3) {
+    outfile4 << inducedField[i + 0] * 5.14220652e11 << " "
+             << inducedField[i + 1] * 5.14220652e11 << " "
+             << inducedField[i + 2] * 5.14220652e11 << "\n";
   }
-  std::cout << "Setup the inverse polarization matrix. \nStarting "
-               "preconditioned conjugate gradient solver"
-            << std::endl;
+  outfile4 << std::endl;
+
+  exit(0);
 
   // Solving the linear system
   Eigen::ConjugateGradient<Eigen::MatrixXd, Eigen::Lower | Eigen::Upper,
@@ -137,13 +160,14 @@ void BackgroundPolarizer::Polarize(std::vector<EwdSegment>& ewaldSegments) {
 
   x = 0.05291 * x;  // convert to CTP units
 
-  std::ofstream outfile;
-  outfile.open("inducedDipoleXTP.txt");
-  outfile << "idx idy idz" << std::endl;
+  std::ofstream outfile2;
+  outfile2.open("resultXTP.txt");
+  outfile2 << "idx idy idz" << std::endl;
   for (Index i = 0; i < systemSize; i += 3) {
-    outfile << x[i + 0] << " " << x[i + 1] << " " << x[i + 2] << "\n";
+    outfile2 << x[i + 0] << " " << x[i + 1] << " " << x[i + 2] << "\n";
   }
-  outfile << std::endl;
+  outfile2 << std::endl;
 }
+
 }  // namespace xtp
 }  // namespace votca
