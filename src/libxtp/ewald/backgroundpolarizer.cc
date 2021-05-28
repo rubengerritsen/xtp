@@ -107,9 +107,9 @@ void BackgroundPolarizer::Polarize(std::vector<EwdSegment>& ewaldSegments) {
       rspace.getInducedDipoleInteraction();
   std::cout << "Setup real space part of dipole interaction matrix"
             << std::endl;
-  // inducedDipoleInteraction += kspace.getInducedDipoleInteraction();
-  // std::cout << "Setup reciprocal space part of dipole interaction matrix"
-  //           << std::endl;
+  inducedDipoleInteraction += kspace.getInducedDipoleInteraction();
+  std::cout << "Setup reciprocal space part of dipole interaction matrix"
+            << std::endl;
 
   //Add  the inverse polarization
   // Index diagIndex = 0;

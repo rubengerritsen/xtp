@@ -28,7 +28,10 @@ namespace xtp {
 
 KSpace::KSpace(const EwaldOptions& options, const UnitCell& unitcell,
                std::vector<EwdSegment>& ewaldSegments, Logger& log)
-    : options(options), _unit_cell(unitcell), _ewaldSegments(ewaldSegments), _log(log) {
+    : options(options),
+      _unit_cell(unitcell),
+      _ewaldSegments(ewaldSegments),
+      _log(log) {
   a1 = options.alpha;
   a2 = a1 * a1;
   a3 = a1 * a2;
@@ -95,69 +98,62 @@ Eigen::MatrixXd KSpace::getInducedDipoleInteraction() {
   Eigen::MatrixXd result(systemSize, systemSize);
   result.fill(0);
   // Basic induced field
-  for (const KVector& kvec : _kvector_list) {
-    Eigen::VectorXcd SkInteraction = getSkInteractionVector(kvec.getVector());
-    for (Index i = 0; i < Index(_ewaldSegments.size()); ++i) {
-      EwdSegment& seg = _ewaldSegments[i];
-      Index startRow = segmentOffSet[i];
-      for (EwdSite& site : seg) {
-        double kPosDot = kvec.getVector().dot(site.getPos());
-        Eigen::VectorXd realPart = std::sin(kPosDot) * SkInteraction.real() +
-                                   std::cos(kPosDot) * SkInteraction.imag();
-        result.row(startRow + 0) +=
-            fourPiVolume * kvec.getVector()[0] * kvec.getAk() * realPart;
-        result.row(startRow + 1) +=
-            fourPiVolume * kvec.getVector()[1] * kvec.getAk() * realPart;
-        result.row(startRow + 2) +=
-            fourPiVolume * kvec.getVector()[2] * kvec.getAk() * realPart;
-        startRow += 3;
-      }
-    }
-  }
+  // for (const KVector& kvec : _kvector_list) {
+  //   Eigen::VectorXcd SkInteraction =
+  //   getSkInteractionVector(kvec.getVector()); for (Index i = 0; i <
+  //   Index(_ewaldSegments.size()); ++i) {
+  //     EwdSegment& seg = _ewaldSegments[i];
+  //     Index startRow = segmentOffSet[i];
+  //     for (EwdSite& site : seg) {
+  //       double kPosDot = kvec.getVector().dot(site.getPos());
+  //       Eigen::VectorXd realPart = std::sin(kPosDot) * SkInteraction.real() +
+  //                                  std::cos(kPosDot) * SkInteraction.imag();
+  //       result.row(startRow + 0) +=
+  //           fourPiVolume * kvec.getVector()[0] * kvec.getAk() * realPart;
+  //       result.row(startRow + 1) +=
+  //           fourPiVolume * kvec.getVector()[1] * kvec.getAk() * realPart;
+  //       result.row(startRow + 2) +=
+  //           fourPiVolume * kvec.getVector()[2] * kvec.getAk() * realPart;
+  //       startRow += 3;
+  //     }
+  //   }
+  // }
   // Shape correction
   // A bit ugly
-  for (Index i = 0; i < Index(_ewaldSegments.size()); ++i) {
-    EwdSegment& seg = _ewaldSegments[i];
-    Index startRow = segmentOffSet[i];
-    for (EwdSite& site : seg) {
-      switch (options.shape) {
-        case Shape::xyslab:
-          for (Index j = 2; j < systemSize; j = j + 3) {
-            result(startRow + 2, j) += fourPiVolume;
-          }
-          startRow += 3;
-          break;
-        case Shape::cube:
-        case Shape::sphere:
-          for (Index j = 0; j < systemSize; j = j + 3) {
-            result(startRow + 0, j + 0) += (fourPiVolume / 3.0);
-            result(startRow + 1, j + 1) += (fourPiVolume / 3.0);
-            result(startRow + 2, j + 2) += (fourPiVolume / 3.0);
-          }
-          startRow += 3;
-          break;
-        default:
-          throw std::runtime_error("Shape not implemented.");
-      }
-    }
-  }
+  // for (Index i = 0; i < Index(_ewaldSegments.size()); ++i) {
+  //   EwdSegment& seg = _ewaldSegments[i];
+  //   Index startRow = segmentOffSet[i];
+  //   for (EwdSite& site : seg) {
+  //     switch (options.shape) {
+  //       case Shape::xyslab:
+  //         for (Index j = 2; j < systemSize; j = j + 3) {
+  //           result(startRow + 2, j) += fourPiVolume;
+  //         }
+  //         startRow += 3;
+  //         break;
+  //       case Shape::cube:
+  //       case Shape::sphere:
+  //         for (Index j = 0; j < systemSize; j = j + 3) {
+  //           result(startRow + 0, j + 0) += (fourPiVolume / 3.0);
+  //           result(startRow + 1, j + 1) += (fourPiVolume / 3.0);
+  //           result(startRow + 2, j + 2) += (fourPiVolume / 3.0);
+  //         }
+  //         startRow += 3;
+  //         break;
+  //       default:
+  //         throw std::runtime_error("Shape not implemented.");
+  //     }
+  //   }
+  // }
   // Intramolecular correction
   for (Index segId = 0; segId < Index(_ewaldSegments.size()); ++segId) {
     EwdSegment& currentSeg = _ewaldSegments[segId];
     Index startRow = segmentOffSet[segId];
     Index startCol = startRow;
     for (Index site_ind1 = 0; site_ind1 < currentSeg.size(); ++site_ind1) {
-      for (Index site_ind2 = site_ind1 + 1; site_ind2 < currentSeg.size();
-           ++site_ind2) {
-        result.block<3, 3>(startRow + 3 * site_ind1,
-                           startCol + 3 * site_ind2) -=
-            inducedDipoleInteractionAtBy(currentSeg[site_ind1],
-                                         currentSeg[site_ind2]);
-        result.block<3, 3>(startRow + 3 * site_ind2,
-                           startCol + 3 * site_ind1) -=
-            inducedDipoleInteractionAtBy(currentSeg[site_ind2],
-                                         currentSeg[site_ind1]);
-      }
+      result.block<3, 3>(startRow + 3 * site_ind1, startCol + 3 * site_ind1) -=
+          inducedDipoleInteractionAtBy(currentSeg[site_ind1],
+                                       currentSeg[site_ind1]);
     }
   }
   return result;
@@ -249,7 +245,7 @@ void KSpace::computeTholeVariables(const Eigen::Matrix3d& pol1,
   thole_u3 =
       (R1 * R2) / std::sqrt((1.0 / 3.0) * (pol1.array() * pol2.array()).sum());
 
-  if (thole_u3 < 40) {
+  if (thole * thole_u3 < 40) {
     double thole_exp = std::exp(-thole * thole_u3);
     double thole_u6 = thole_u3 * thole_u3;
     l3 = 1 - thole_exp;
@@ -265,19 +261,23 @@ void KSpace::computeTholeVariables(const Eigen::Matrix3d& pol1,
 
 Eigen::Matrix3d KSpace::inducedDipoleInteractionAtBy(EwdSite& site,
                                                      const EwdSite& nbSite) {
-  computeDistanceVariables( site.getPos() - nbSite.getPos());
+  computeDistanceVariables(site.getPos() - nbSite.getPos());
   computeScreenedInteraction();
   computeTholeVariables(site.getPolarizationMatrix(),
                         nbSite.getPolarizationMatrix());
-
   Eigen::Matrix3d interaction = Eigen::Matrix3d::Zero();
-  interaction.diagonal().array() += l3 * rR3s;
-  interaction += dr * dr.transpose() * l5 * rR5s;
+  if (R1 < 1e-4) {
+    interaction.diagonal().array() += 4. / 3. * a3 * rSqrtPi;
+  } else {
+
+    interaction.diagonal().array() += l3 * rR3s;
+    interaction -= dr * dr.transpose() * l5 * rR5s;
+  }
   return interaction;
 }
 
 Eigen::Vector3d KSpace::staticFieldAtBy(EwdSite& site, const EwdSite& nbSite) {
-  computeDistanceVariables( site.getPos() - nbSite.getPos());
+  computeDistanceVariables(site.getPos() - nbSite.getPos());
   computeScreenedInteraction();
 
   Eigen::Vector3d field = Eigen::Vector3d::Zero();

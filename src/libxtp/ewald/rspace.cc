@@ -41,6 +41,7 @@ void RSpace::computeStaticField() {
 Eigen::MatrixXd RSpace::getInducedDipoleInteraction() {
   Eigen::MatrixXd result(systemSize, systemSize);
   result.fill(0);
+  return result;
   for (Index segId = 0; segId < Index(_ewaldSegments.size()); ++segId) {
     // The first part can be done in the same way as the static field ...
     EwdSegment& currentSeg = _ewaldSegments[segId];
