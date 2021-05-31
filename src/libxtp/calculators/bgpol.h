@@ -18,8 +18,8 @@
  */
 
 #pragma once
-#ifndef VOTCA_XTP_EWALDBG_H
-#define VOTCA_XTP_EWALDBG_H
+#ifndef VOTCA_XTP_BGPOL_H
+#define VOTCA_XTP_BGPOL_H
 
 // Local VOTCA includes
 #include "votca/xtp/qmcalculator.h"
@@ -30,10 +30,10 @@
 namespace votca {
 namespace xtp {
 
-class EwaldBG final : public QMCalculator {
+class BGPol final : public QMCalculator {
  public:
-  EwaldBG() = default;
-  ~EwaldBG() = default;
+  BGPol() = default;
+  ~BGPol() = default;
 
   std::string Identify() { return "ewaldbg"; }
 
@@ -47,7 +47,6 @@ class EwaldBG final : public QMCalculator {
 
  private:
  EwaldOptions ewd_options;
- std::string _dummy;
  std::string _mapfile;
  Logger _log;
  std::vector<PolarSegment> _polar_background;

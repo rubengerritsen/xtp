@@ -22,12 +22,12 @@
 // Local private VOTCA includes
 #include "ewald/ewd_segment.h"
 #include "ewald/unitcell.h"
-#include "ewaldbg.h"
+#include "bgpol.h"
 
 namespace votca {
 namespace xtp {
 
-void EwaldBG::ParseOptions(const tools::Property& options) {
+void BGPol::ParseOptions(const tools::Property& options) {
   _mapfile = options.get(".mapfile").as<std::string>();
   ewd_options.alpha =
       (1.0 / tools::conv::nm2bohr) * options.get(".alpha").as<double>();
@@ -48,7 +48,7 @@ void EwaldBG::ParseOptions(const tools::Property& options) {
   }
 }
 
-bool EwaldBG::Evaluate(Topology& top) {
+bool BGPol::Evaluate(Topology& top) {
   _log.setReportLevel(Log::current_level);
   _log.setMultithreading(true);
   // Make XTP_LOG behave like std::cout
@@ -78,7 +78,7 @@ bool EwaldBG::Evaluate(Topology& top) {
       site.updatePos(unit_cell.placeCoordInBox(site.getPos()));
     }
     // Should be deleted when merged and after compare with ctp is done
-    seg.calcPos();
+    //seg.calcPos();
   }
 
   // Polarize the neutral background
@@ -94,7 +94,7 @@ bool EwaldBG::Evaluate(Topology& top) {
   return true;
 }
 
-void EwaldBG::WriteToHdf5(std::string filename) const {
+void BGPol::WriteToHdf5(std::string filename) const {
   CheckpointFile cpf(filename, CheckpointAccessLevel::CREATE);
   CheckpointWriter a = cpf.getWriter();
   CheckpointWriter ww = a.openChild("polar_background");

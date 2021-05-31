@@ -105,23 +105,23 @@ void BackgroundPolarizer::Polarize(std::vector<EwdSegment>& ewaldSegments) {
   // Set up the dipole interaction matrix
   Eigen::MatrixXd inducedDipoleInteraction(systemSize, systemSize);
   inducedDipoleInteraction.fill(0);
-  //rspace.addInducedDipoleInteractionTo(inducedDipoleInteraction);
+  rspace.addInducedDipoleInteractionTo(inducedDipoleInteraction);
   kspace.addInducedDipoleInteractionTo(inducedDipoleInteraction);
-  //kspace.addShapeCorrectionTo(inducedDipoleInteraction);
-  //kspace.addSICorrectionTo(inducedDipoleInteraction);
+  kspace.addShapeCorrectionTo(inducedDipoleInteraction);
+  kspace.addSICorrectionTo(inducedDipoleInteraction);
 
   //Add  the inverse polarization
-  // Index diagIndex = 0;
-  // for (auto& seg : ewaldSegments) {
-  //   for (auto& site : seg) {
-  //     inducedDipoleInteraction.block<3, 3>(diagIndex, diagIndex) +=
-  //         site.getPolarizationMatrix().inverse();
-  //     diagIndex += 3;
-  //   }
-  // }
-  // std::cout << "Setup the inverse polarization matrix. \nStarting "
-  //              "preconditioned conjugate gradient solver"
-  //           << std::endl;
+  Index diagIndex = 0;
+  for (auto& seg : ewaldSegments) {
+    for (auto& site : seg) {
+      inducedDipoleInteraction.block<3, 3>(diagIndex, diagIndex) +=
+          site.getPolarizationMatrix().inverse();
+      diagIndex += 3;
+    }
+  }
+  std::cout << "Setup the inverse polarization matrix. \nStarting "
+               "preconditioned conjugate gradient solver"
+            << std::endl;
 
   Eigen::VectorXd inducedField = inducedDipoleInteraction * initialGuess;
 
@@ -134,8 +134,6 @@ void BackgroundPolarizer::Polarize(std::vector<EwdSegment>& ewaldSegments) {
              << inducedField[i + 2] * 5.14220652e11 << "\n";
   }
   outfile4 << std::endl;
-
-  exit(0);
 
   // Solving the linear system
   Eigen::ConjugateGradient<Eigen::MatrixXd, Eigen::Lower | Eigen::Upper,
@@ -157,7 +155,7 @@ void BackgroundPolarizer::Polarize(std::vector<EwdSegment>& ewaldSegments) {
     std::cout << "PCG had a numerical issue" << std::endl;
   }
 
-  x = 0.05291 * x;  // convert to CTP units
+  x = -0.05291 * x;  // convert to CTP units
 
   std::ofstream outfile2;
   outfile2.open("resultXTP.txt");
