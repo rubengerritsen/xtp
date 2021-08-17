@@ -18,41 +18,44 @@
  */
 
 #pragma once
-#include <memory>
-#ifndef VOTCA_XTP_JOBAPPLICATION_H
-#define VOTCA_XTP_JOBAPPLICATION_H
+#ifndef VOTCA_XTP_EINTERNAL_H
+#define VOTCA_XTP_EINTERNAL_H
 
 // Local VOTCA includes
-#include "jobcalculator.h"
-#include "progressobserver.h"
-#include "statesaver.h"
-#include "topology.h"
-#include "xtpapplication.h"
+#include "votca/xtp/qmcalculator.h"
+#include "votca/xtp/qmstate.h"
 
 namespace votca {
 namespace xtp {
 
-class JobApplication : public XtpApplication {
+class EInternal final : public QMCalculator {
  public:
-  JobApplication();
-  ~JobApplication() override = default;
-  void Initialize() override;
-  bool EvaluateOptions() override;
-  void Run() override;
+  EInternal() = default;
+  ~EInternal() = default;
 
-  void BeginEvaluate(Index nThreads, Index ompthread,
-                     ProgObserver<std::vector<Job> > &jobs);
-  bool EvaluateFrame(Topology &top);
-  void SetCalculator(std::unique_ptr<JobCalculator> &&calculator);
+  std::string Identify() { return "einternal"; }
+
+  bool WriteToStateFile() const { return true; }
 
  protected:
-  bool _generate_input = false;
-  bool _run = false;
-  bool _import = false;
-  std::unique_ptr<JobCalculator> _calculator;
+  void ParseOptions(const tools::Property &user_options);
+  bool Evaluate(Topology &top);
+
+ private:
+  void ParseEnergies();
+
+  std::map<std::string, QMStateCarrierStorage<double> > _seg_U_xX_nN;
+  std::map<std::string, QMStateCarrierStorage<double> > _seg_U_nX_nN;
+  std::map<std::string, QMStateCarrierStorage<double> > _seg_U_xN_xX;
+
+  std::map<std::string, QMStateCarrierStorage<bool> > _seg_has_state;
+
+  std::map<std::string, bool> _has_seg;
+
+  std::string _energiesXML;
 };
 
 }  // namespace xtp
 }  // namespace votca
 
-#endif  // VOTCA_XTP_JOBAPPLICATION_H
+#endif  // VOTCA_XTP_EINTERNAL_H

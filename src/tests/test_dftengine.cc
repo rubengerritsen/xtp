@@ -1,3 +1,5 @@
+
+
 /*
  * Copyright 2009-2020 The VOTCA Development Team (http://www.votca.org)
  *
@@ -31,14 +33,6 @@ using namespace votca::xtp;
 BOOST_AUTO_TEST_SUITE(dftengine_test)
 
 QMMolecule Water() {
-  std::ofstream xyzfile("molecule.xyz");
-  xyzfile << "3" << std::endl;
-  xyzfile << "Water molecule" << std::endl;
-  xyzfile << "O          0.00000        0.00000        0.11779" << std::endl;
-  xyzfile << "H          0.00000        0.75545       -0.47116" << std::endl;
-  xyzfile << "H          0.00000       -0.75545       -0.47116" << std::endl;
-
-  xyzfile.close();
   QMMolecule mol(" ", 1);
   mol.LoadFromFile(std::string(XTP_TEST_DATA_FOLDER) + "/espfit/molecule.xyz");
   return mol;
@@ -119,7 +113,7 @@ BOOST_AUTO_TEST_CASE(dft_full) {
   Orbitals orb;
   orb.QMAtoms() = Water();
 
-  std::ofstream xml("dftengine.xml");
+  std::ofstream xml("dftengine2.xml");
   xml << "<package>" << std::endl;
   xml << "<spin>1</spin>" << std::endl;
   xml << "<name>xtp</name>" << std::endl;
@@ -129,12 +123,12 @@ BOOST_AUTO_TEST_CASE(dft_full) {
   xml << "<use_auxbasisset>false</use_auxbasisset>" << std::endl;
   xml << "<use_ecp>false</use_ecp>" << std::endl;
   xml << "<read_guess>0</read_guess>" << std::endl;
-  xml << "<xtpdft>" << std::endl;
   xml << "<use_external_field>false</use_external_field>" << std::endl;
+  xml << "<xtpdft>" << std::endl;
   xml << "<use_external_density>false</use_external_density>" << std::endl;
   xml << "<with_screening choices=\"bool\">true</with_screening>\n";
   xml << "<screening_eps  choices=\"float+\">1e-9</screening_eps>\n";
-  xml << "<four_center_method>cache</four_center_method>\n";
+  xml << "<fock_matrix_reset>5</fock_matrix_reset>\n";
   xml << "<convergence>" << std::endl;
   xml << "    <energy>1e-7</energy>" << std::endl;
   xml << "    <method>DIIS</method>" << std::endl;
@@ -156,7 +150,7 @@ BOOST_AUTO_TEST_CASE(dft_full) {
   xml << "</package>" << std::endl;
   xml.close();
   votca::tools::Property prop;
-  prop.LoadFromXML("dftengine.xml");
+  prop.LoadFromXML("dftengine2.xml");
 
   Logger log;
   dft.setLogger(&log);
@@ -227,14 +221,15 @@ BOOST_AUTO_TEST_CASE(density_guess) {
   xml << "<functional>XC_HYB_GGA_XC_PBEH</functional>" << std::endl;
   xml << "<basisset>3-21G.xml</basisset>" << std::endl;
   xml << "<use_auxbasisset>false</use_auxbasisset>" << std::endl;
+  xml << "<use_external_field>false</use_external_field>" << std::endl;
   xml << "<use_ecp>false</use_ecp>" << std::endl;
   xml << "<read_guess>0</read_guess>" << std::endl;
   xml << "<xtpdft>" << std::endl;
-  xml << "<use_external_field>false</use_external_field>" << std::endl;
   xml << "<use_external_density>false</use_external_density>" << std::endl;
   xml << "<with_screening choices=\"bool\">true</with_screening>\n";
   xml << "<screening_eps  choices=\"float+\">1e-9</screening_eps>\n";
-  xml << "<four_center_method>cache</four_center_method>\n";
+  xml << "<four_center_method>direct</four_center_method>\n";
+  xml << "<fock_matrix_reset>5</fock_matrix_reset>\n";
   xml << "<convergence>" << std::endl;
   xml << "    <energy>1e-7</energy>" << std::endl;
   xml << "    <method>DIIS</method>" << std::endl;
