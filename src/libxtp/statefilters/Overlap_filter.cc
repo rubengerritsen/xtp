@@ -27,7 +27,7 @@ namespace votca {
 namespace xtp {
 
 void Overlap_filter::Initialize(const tools::Property& options) {
-  threshold_ = options.ifExistsReturnElseThrowRuntimeError<double>(".");
+  threshold_ = options.get(".").as<double>();
 }
 
 void Overlap_filter::Info(Logger& log) const {
@@ -93,10 +93,8 @@ Eigen::MatrixXd Overlap_filter::CalcExcitonAORepresentation(
   Index bse_ctotal = bse_cmax - bse_cmin + 1;
   Index basis = orb.getBasisSetSize();
   Index bse_size_ao = basis * basis;
-  auto occlevels = orb.MOs().eigenvectors().block(
-      0, bse_vmin, orb.MOs().eigenvectors().rows(), bse_vtotal);
-  auto virtlevels = orb.MOs().eigenvectors().block(
-      0, bse_cmin, orb.MOs().eigenvectors().rows(), bse_ctotal);
+  auto occlevels = orb.MOs().eigenvectors().middleCols(bse_vmin, bse_vtotal);
+  auto virtlevels = orb.MOs().eigenvectors().middleCols(bse_cmin, bse_ctotal);
 
   if (orb.getTDAApprox()) {
     coeffs.resize(bse_size_ao, nostates);

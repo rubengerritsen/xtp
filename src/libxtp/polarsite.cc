@@ -56,9 +56,7 @@ Eigen::Vector3d PolarSite::getStaticDipole() const {
 }
 
 Eigen::Vector3d PolarSite::getDipole() const {
-  Eigen::Vector3d dipole = Q_.segment<3>(1);
-  dipole += Induced_Dipole();
-  return dipole;
+  return Q_.segment<3>(1) + induced_dipole_;
 }
 
 void PolarSite::setpolarization(const Eigen::Matrix3d& pol) {

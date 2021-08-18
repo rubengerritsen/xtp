@@ -35,14 +35,10 @@ using std::flush;
 
 void DFTcoupling::Initialize(tools::Property& options) {
 
-  std::string key = "";
-  degeneracy_ = options.ifExistsReturnElseReturnDefault<double>(
-      key + "degeneracy", degeneracy_);
+  degeneracy_ = options.get("degeneracy").as<double>();
   degeneracy_ *= tools::conv::ev2hrt;
-  numberofstatesA_ = options.ifExistsReturnElseReturnDefault<Index>(
-      key + "levA", numberofstatesA_);
-  numberofstatesB_ = options.ifExistsReturnElseReturnDefault<Index>(
-      key + "levB", numberofstatesB_);
+  numberofstatesA_ = options.get("levA").as<Index>();
+  numberofstatesB_ = options.get("levB").as<Index>();
 }
 
 void DFTcoupling::WriteToProperty(tools::Property& type_summary,
@@ -177,10 +173,10 @@ void DFTcoupling::CalculateCouplings(const Orbitals& orbitalsA,
   }
 
   // constructing merged orbitals
-  auto MOsA = orbitalsA.MOs().eigenvectors().block(0, Range_orbA.first, basisA,
-                                                   Range_orbA.second);
-  auto MOsB = orbitalsB.MOs().eigenvectors().block(0, Range_orbB.first, basisB,
-                                                   Range_orbB.second);
+  auto MOsA = orbitalsA.MOs().eigenvectors().middleCols(Range_orbA.first,
+                                                        Range_orbA.second);
+  auto MOsB = orbitalsB.MOs().eigenvectors().middleCols(Range_orbB.first,
+                                                        Range_orbB.second);
 
   XTP_LOG(Log::info, *pLog_) << "Calculating overlap matrix for basisset: "
                              << orbitalsAB.getDFTbasisName() << flush;
